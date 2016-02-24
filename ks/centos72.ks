@@ -62,6 +62,7 @@ poweroff
 @base
 @console-internet
 chrony
+cifs-utils
 sudo
 python-pyasn1
 parted

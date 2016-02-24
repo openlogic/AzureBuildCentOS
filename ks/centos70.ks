@@ -62,6 +62,7 @@ poweroff
 @base
 @console-internet
 ntp
+cifs-utils
 sudo
 python-pyasn1
 parted
