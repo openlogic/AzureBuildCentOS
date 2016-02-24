@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 6.7 Azure VM
+# Kickstart for provisioning a RHEL 7.2 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -10,7 +10,7 @@ text
 firstboot --disable
 
 # Keyboard layouts
-keyboard us
+keyboard --vckeymap=us --xlayouts='us'
 
 # System language
 lang en_US.UTF-8
@@ -19,14 +19,14 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://olcentgbl.trafficmanager.net/centos/6.7/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/6.7/updates/x86_64/
+url --url=http://olcentgbl.trafficmanager.net/centos/7.2.1511/os/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.2.1511/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,ntp,dnsmasq,hypervkvpd"
+services --enabled="sshd,waagent,ntp,dnsmasq,NetworkManager"
 
 # System timezone
 timezone Etc/UTC --isUtc
@@ -38,13 +38,13 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
-part / --fstyp="ext4" --size=1 --grow --asprimary
+part / --fstyp="xfs" --size=1 --grow --asprimary
 
 # System bootloader configuration
-bootloader --location=mbr --append="console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300"
+bootloader --location=mbr
 
 # Add OpenLogic repo
-repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/6/openlogic/x86_64/
+repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/
 
 # Firewall configuration
 firewall --disabled
@@ -61,23 +61,12 @@ poweroff
 %packages
 @base
 @console-internet
-@core
-@debugging
-@directory-client
-@hardware-monitoring
-@java-platform
-@large-systems
-@network-file-system-client
-@performance
-@perl-runtime
-@server-platform
-ntp
-dnsmasq
-cifs-utils
+chrony
 sudo
 python-pyasn1
 parted
 WALinuxAgent
+hypervkvpd
 -dracut-config-rescue
 
 %end
@@ -89,20 +78,20 @@ WALinuxAgent
 # Disable the root account
 usermod root -p '!!'
 
-# Remove unneeded parameters in grub
-sed -i 's/ numa=off//g' /boot/grub/grub.conf
-sed -i 's/ rhgb//g' /boot/grub/grub.conf
-sed -i 's/ quiet//g' /boot/grub/grub.conf
-sed -i 's/ crashkernel=auto//g' /boot/grub/grub.conf
-
 # Set OL repos
-curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/CentOS-Base.repo
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
-rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
+
+# Set the kernel cmdline
+sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0"/g' /etc/default/grub
+
+# Rebuild grub.cfg
+grub2-mkconfig -o /boot/grub2/grub.cfg
 
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
@@ -123,9 +112,13 @@ NETWORKING=yes
 HOSTNAME=localhost.localdomain
 EOF
 
-# Disable persistent net rules
+# Disable persistent net rules (FIXME: later we can just rely on net.ifnames)
 touch /etc/udev/rules.d/75-persistent-net-generator.rules
 rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules
+
+# Disable some unneeded services by default (administrators can re-enable if desired)
+systemctl disable wpa_supplicant
+systemctl disable abrtd
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision

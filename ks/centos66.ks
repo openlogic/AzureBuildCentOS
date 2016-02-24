@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 6.7 Azure VM
+# Kickstart for provisioning a RHEL 6.6 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,8 +19,8 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://olcentgbl.trafficmanager.net/centos/6.7/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/6.7/updates/x86_64/
+url --url=http://vault.centos.org/6.6/os/x86_64/Packages/
+repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/6.6/updates/x86_64/Packages/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
