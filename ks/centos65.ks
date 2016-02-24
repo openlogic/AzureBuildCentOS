@@ -41,7 +41,7 @@ zerombr
 part / --fstyp="ext4" --size=1 --grow --asprimary
 
 # System bootloader configuration
-bootloader --location=mbr --append="console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300"
+bootloader --location=mbr --append="numa=off console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300"
 
 # Add OpenLogic repo
 repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/6/openlogic/x86_64/
@@ -90,7 +90,6 @@ WALinuxAgent
 usermod root -p '!!'
 
 # Remove unneeded parameters in grub
-sed -i 's/ numa=off//g' /boot/grub/grub.conf
 sed -i 's/ rhgb//g' /boot/grub/grub.conf
 sed -i 's/ quiet//g' /boot/grub/grub.conf
 sed -i 's/ crashkernel=auto//g' /boot/grub/grub.conf
