@@ -58,6 +58,10 @@ skipx
 # Power down the machine after install
 poweroff
 
+# Disable kdump
+%addon com_redhat_kdump --disable
+%end
+
 %packages
 @base
 @console-internet
