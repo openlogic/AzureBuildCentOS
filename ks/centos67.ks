@@ -26,7 +26,7 @@ repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/cento
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,ntp,dnsmasq,hypervkvpd"
+services --enabled="sshd,waagent,ntpd,dnsmasq,hypervkvpd"
 
 # System timezone
 timezone Etc/UTC --isUtc
@@ -126,6 +126,9 @@ EOF
 # Disable persistent net rules
 touch /etc/udev/rules.d/75-persistent-net-generator.rules
 rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules
+
+# Disable some unneeded services by default (administrators can re-enable if desired)
+chkconfig cups off
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
