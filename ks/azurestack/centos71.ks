@@ -26,7 +26,7 @@ repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/7.1.1503/updates/
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,ntp,dnsmasq,NetworkManager"
+services --enabled="sshd,ntpd,dnsmasq,NetworkManager"
 
 # System timezone
 timezone Etc/UTC --isUtc
@@ -70,7 +70,7 @@ cifs-utils
 sudo
 python-pyasn1
 parted
-WALinuxAgent
+#WALinuxAgent
 hypervkvpd
 -dracut-config-rescue
 
@@ -124,6 +124,12 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 # Disable some unneeded services by default (administrators can re-enable if desired)
 systemctl disable wpa_supplicant
 systemctl disable abrtd
+
+# Install the Azure Linux agent
+curl -so /root/WALinuxAgent-2.1.3-1.noarch.rpm https://github.com/szarkos/AzureBuildCentOS/raw/master/rpm/7/WALinuxAgent-2.1.3-1.noarch.rpm
+rpm -i /root/WALinuxAgent-2.1.3-1.noarch.rpm
+rm -f /root/WALinuxAgent-2.1.3-1.noarch.rpm
+systemctl enable waagent.service
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
