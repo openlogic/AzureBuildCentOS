@@ -59,8 +59,8 @@ skipx
 poweroff
 
 # Disable kdump
-%addon com_redhat_kdump --disable
-%end
+#%addon com_redhat_kdump --disable
+#%end
 
 %packages
 @base
