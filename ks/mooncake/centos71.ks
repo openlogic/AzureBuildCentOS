@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 7.2 Azure VM
+# Kickstart for provisioning a RHEL 7.1 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,8 +19,8 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://olcentgbl.trafficmanager.net/centos/7.2.1511/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.2.1511/updates/x86_64/
+url --url=http://vault.centos.org/7.1.1503/os/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/7.1.1503/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
@@ -38,7 +38,7 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
-part / --fstyp="xfs" --size=1 --grow --asprimary
+part / --fstyp="ext4" --size=1 --grow --asprimary
 
 # System bootloader configuration
 bootloader --location=mbr
@@ -65,7 +65,7 @@ poweroff
 %packages
 @base
 @console-internet
-chrony
+ntp
 cifs-utils
 sudo
 python-pyasn1
@@ -84,8 +84,8 @@ hypervkvpd
 usermod root -p '!!'
 
 # Set OL repos
-#curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/CentOS-Base-7.repo
-curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic.repo
+#curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/mooncake/CentOS-Base-7.repo
+curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/mooncake/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY

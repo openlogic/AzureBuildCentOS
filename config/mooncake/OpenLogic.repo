@@ -1,0 +1,6 @@
+[openlogic]
+name=CentOS-$releasever - openlogic packages for $basearch
+baseurl=http://olcentchan.chinacloudapp.cn/openlogic/$releasever/openlogic/$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=http://olcentchan.chinacloudapp.cn/openlogic/$releasever/openlogic/$basearch/OpenLogic-GPG-KEY
