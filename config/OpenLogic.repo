@@ -1,6 +1,0 @@
-[openlogic]
-name=CentOS-$releasever - openlogic packages for $basearch
-baseurl=http://olcentgbl.trafficmanager.net/openlogic/$releasever/openlogic/$basearch/
-enabled=1
-gpgcheck=1
-gpgkey=http://olcentgbl.trafficmanager.net/openlogic/$releasever/openlogic/$basearch/OpenLogic-GPG-KEY
