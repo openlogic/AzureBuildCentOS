@@ -59,8 +59,9 @@ skipx
 poweroff
 
 # Disable kdump
-%addon com_redhat_kdump --disable
-%end
+# This parameter not valid for CentOS 7.0
+#%addon com_redhat_kdump --disable
+#%end
 
 %packages
 @base
