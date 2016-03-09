@@ -96,7 +96,7 @@ sed -i 's/ quiet//g' /boot/grub/grub.conf
 sed -i 's/ crashkernel=auto//g' /boot/grub/grub.conf
 
 # Set OL repos
-#curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/mooncake/CentOS-Base.repo
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/mooncake/CentOS-Base.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/mooncake/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys

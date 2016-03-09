@@ -84,7 +84,7 @@ hypervkvpd
 usermod root -p '!!'
 
 # Set OL repos
-#curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/mooncake/CentOS-Base-7.repo
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/mooncake/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/mooncake/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
