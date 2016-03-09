@@ -117,6 +117,32 @@ NETWORKING=yes
 HOSTNAME=localhost.localdomain
 EOF
 
+# Deploy new configuration
+cat <<EOF > /etc/pam.d/system-auth-ac
+
+auth        required      pam_env.so
+auth        sufficient    pam_fprintd.so
+auth        sufficient    pam_unix.so nullok try_first_pass
+auth        requisite     pam_succeed_if.so uid >= 1000 quiet_success
+auth        required      pam_deny.so
+
+account     required      pam_unix.so
+account     sufficient    pam_localuser.so
+account     sufficient    pam_succeed_if.so uid < 1000 quiet
+account     required      pam_permit.so
+
+password    requisite     pam_pwquality.so try_first_pass local_users_only retry=3 authtok_type= ucredit=-1 lcredit=-1 dcredit=-1 ocredit=-1
+password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok remember=5
+password    required      pam_deny.so
+
+session     optional      pam_keyinit.so revoke
+session     required      pam_limits.so
+-session     optional      pam_systemd.so
+session     [success=1 default=ignore] pam_succeed_if.so service in crond quiet use_uid
+session     required      pam_unix.so
+
+EOF
+
 # Disable persistent net rules (FIXME: later we can just rely on net.ifnames)
 touch /etc/udev/rules.d/75-persistent-net-generator.rules
 rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules
