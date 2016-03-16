@@ -107,6 +107,9 @@ rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
 
+# Changing password retrictions defined by CIS CentOS Linux 6 Benchmark
+sudo sed -i 's/pam_cracklib.so try_first_pass retry=3 type=/\pam_cracklib.so try_first_pass retry=3 minlen=14 dcredit=-1 ucredit=-1 ocredit=-1 lcredit=-1/g' /etc/pam.d/system-auth
+
 # Configure network
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
 DEVICE=eth0
