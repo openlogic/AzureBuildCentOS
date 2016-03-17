@@ -23,7 +23,7 @@ url --url=http://olcentgbl.trafficmanager.net/centos/7.2.1511/os/x86_64/
 repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.2.1511/updates/x86_64/
 
 # Root password
-##rootpw --plaintext "to_be_disabled"
+rootpw --plaintext "to_be_disabled"
 
 # System services
 services --enabled="sshd,waagent,ntp,dnsmasq,NetworkManager"
@@ -81,7 +81,7 @@ hypervkvpd
 #!/bin/bash
 
 # Disable the root account
-##usermod root -p '!!'
+usermod root -p '!!'
 
 # Set OL repos
 #curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
