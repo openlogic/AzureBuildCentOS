@@ -135,9 +135,10 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 chkconfig cups off
 
 # Enable RDMA driver
-## Temp install test agent
-curl -so /tmp/WALinuxAgent-2.0.18-2.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/6/WALinuxAgent-2.0.18-2.noarch.rpm
-rpm -i /tmp/WALinuxAgent-2.0.18-2.noarch.rpm
+  ## Temp install test agent
+  curl -so /tmp/WALinuxAgent-2.0.18-2.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/6/WALinuxAgent-2.0.18-2.noarch.rpm
+  rpm -i /tmp/WALinuxAgent-2.0.18-2.noarch.rpm
+  rm -f /tmp/WALinuxAgent-2.0.18-2.noarch.rpm
 sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
 sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
 
@@ -146,7 +147,7 @@ MPI="l_mpi-rt_p_5.1.3.181.solitairetheme8"
 CFG="IntelMPI-silent.cfg"
 curl -so /tmp/${MPI}.tar.gz http://10.177.146.43/${MPI}.tar.gz  ## Internal link to MPI package
 curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/${CFG}
-tar -zxf /tmp/${MPI}.tar.gz
+tar -C /tmp -zxf /tmp/${MPI}.tar.gz
 /tmp/$MPI/install.sh --silent $CFG
 rm -rf /tmp/${MPI}* /tmp/${CFG}
 
