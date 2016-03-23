@@ -138,12 +138,12 @@ sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
 sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
 
 # Install Intel MPI
-MPI="l_mpi-rt_p_5.1.3.181.solitairetheme8"
+MPI="l_mpi-rt_p_5.1.3.181"
 CFG="IntelMPI-silent.cfg"
 curl -so /tmp/${MPI}.tar.gz http://10.177.146.43/${MPI}.tar.gz  ## Internal link to MPI package
 curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/${CFG}
 tar -C /tmp -zxf /tmp/${MPI}.tar.gz
-/tmp/$MPI/install.sh --silent /tmp/${CFG}
+/tmp/${MPI}/install.sh --silent /tmp/${CFG}
 rm -rf /tmp/${MPI}* /tmp/${CFG}
 
 # Deprovision and prepare for Azure
