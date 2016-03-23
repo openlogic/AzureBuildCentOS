@@ -143,7 +143,7 @@ CFG="IntelMPI-silent.cfg"
 curl -so /tmp/${MPI}.tar.gz http://10.177.146.43/${MPI}.tar.gz  ## Internal link to MPI package
 curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/${CFG}
 tar -C /tmp -zxf /tmp/${MPI}.tar.gz
-/tmp/$MPI/install.sh --silent $CFG
+/tmp/$MPI/install.sh --silent /tmp/${CFG}
 rm -rf /tmp/${MPI}* /tmp/${CFG}
 
 # Deprovision and prepare for Azure
