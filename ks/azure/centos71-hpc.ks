@@ -72,6 +72,7 @@ python-pyasn1
 parted
 #WALinuxAgent
 msft-rdma-drivers
+selinux-policy-devel
 librdmacm
 libmlx4
 dapl
@@ -145,6 +146,22 @@ curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/
 tar -C /tmp -zxf /tmp/${MPI}.tar.gz
 /tmp/${MPI}/install.sh --silent /tmp/${CFG}
 rm -rf /tmp/${MPI}* /tmp/${CFG}
+
+# Fix SELinux for Hyper-V daemons
+cat << EOF > /usr/share/selinux/devel/hyperv-daemons.te
+module hyperv-daemons 1.0;
+require {
+type hypervkvp_t;
+type device_t;
+type hypervvssd_t;
+class chr_file { read write open };
+}
+allow hypervkvp_t device_t:chr_file { read write open };
+allow hypervvssd_t device_t:chr_file { read write open };
+EOF
+cd /usr/share/selinux/devel
+make -f /usr/share/selinux/devel/Makefile hyperv-daemons.pp
+semodule -s targeted -i hyperv-daemons.pp
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
