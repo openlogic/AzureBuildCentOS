@@ -26,7 +26,7 @@ repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/6.5/updates/x86_6
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,ntpd,dnsmasq,hypervkvpd"
+services --enabled="sshd,waagent,ntpd,dnsmasq"
 
 # System timezone
 timezone Etc/UTC --isUtc
