@@ -143,8 +143,8 @@ chkconfig cups off
 
   ## Install LIS4.1 with RDMA drivers
   cd /opt/microsoft/rdma/rhel65
-  yum install kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
-  yum install microsoft-hyper-v-rdma-*.x86_64.rpm
+  rpm -i kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
+  rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
   chkconfig rdma on
 
   sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf

@@ -141,6 +141,8 @@ systemctl disable abrtd
   cd /opt/microsoft/rdma/rhel71
   rpm -i kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
   rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
+  rm -f /initramfs-3.10.0-229.el7.x86_64.img
+  rm -f /boot/initramfs-3.10.0-229.el7.x86_64.img
 
   sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
   sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
