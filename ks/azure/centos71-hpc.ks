@@ -77,6 +77,7 @@ librdmacm
 libmlx4
 dapl
 libibverbs
+-hypervkvpd
 -dracut-config-rescue
 
 %end
@@ -135,8 +136,19 @@ systemctl disable abrtd
   curl -so /tmp/WALinuxAgent-2.0.18-2.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/7/WALinuxAgent-2.0.18-2.noarch.rpm
   rpm -i /tmp/WALinuxAgent-2.0.18-2.noarch.rpm
   rm -f /tmp/WALinuxAgent-2.0.18-2.noarch.rpm
+
+  ## Install LIS4.1 with RDMA drivers
+  cd /opt/microsoft/rdma/rhel71
+  yum install kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
+  yum install microsoft-hyper-v-rdma-*.x86_64.rpm
+
 sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
 sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
+
+# Need to increase max locked memory
+echo -e "\n# Increase max locked memory for RDMA workloads" >> /etc/security/limits.conf
+echo '* soft memlock unlimited' >> /etc/security/limits.conf
+echo '* hard memlock unlimited' >> /etc/security/limits.conf
 
 # Install Intel MPI
 MPI="l_mpi-rt_p_5.1.3.181"
