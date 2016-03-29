@@ -139,8 +139,8 @@ systemctl disable abrtd
 
   ## Install LIS4.1 with RDMA drivers
   cd /opt/microsoft/rdma/rhel71
-  yum install kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
-  yum install microsoft-hyper-v-rdma-*.x86_64.rpm
+  rpm -i kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
+  rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
 
   sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
   sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
