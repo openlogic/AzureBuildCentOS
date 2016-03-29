@@ -142,13 +142,20 @@ systemctl disable abrtd
   yum install kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
   yum install microsoft-hyper-v-rdma-*.x86_64.rpm
 
-sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
-sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
+  sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
+  sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
 
 # Need to increase max locked memory
 echo -e "\n# Increase max locked memory for RDMA workloads" >> /etc/security/limits.conf
 echo '* soft memlock unlimited' >> /etc/security/limits.conf
 echo '* hard memlock unlimited' >> /etc/security/limits.conf
+
+# NetworkManager should ignore RDMA interface
+cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth1
+DEVICE=eth1
+ONBOOT=no
+NM_CONTROLLED=no 
+EOF
 
 # Install Intel MPI
 MPI="l_mpi-rt_p_5.1.3.181"
