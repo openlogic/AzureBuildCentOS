@@ -79,10 +79,6 @@ python-pyasn1
 parted
 #WALinuxAgent
 msft-rdma-drivers
-librdmacm
-libmlx4
-dapl
-libibverbs
 -hypervkvpd
 -dracut-config-rescue
 
@@ -136,6 +132,10 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 chkconfig cups off
 
 # Enable RDMA driver
+
+  ## Need to pull these packages from latest 6.7 repo
+  yum -y install rdma librdmacm libmlx4 dapl libibverbs
+
   ## Temp install test agent
   curl -so /tmp/WALinuxAgent-2.0.18-2.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/6/WALinuxAgent-2.0.18-2.noarch.rpm
   rpm -i /tmp/WALinuxAgent-2.0.18-2.noarch.rpm

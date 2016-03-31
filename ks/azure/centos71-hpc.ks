@@ -73,6 +73,7 @@ parted
 #WALinuxAgent
 msft-rdma-drivers
 selinux-policy-devel
+rdma
 librdmacm
 libmlx4
 dapl
