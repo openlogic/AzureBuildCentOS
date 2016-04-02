@@ -144,6 +144,7 @@ systemctl disable abrtd
   rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
   rm -f /initramfs-3.10.0-229.el7.x86_64.img
   rm -f /boot/initramfs-3.10.0-229.el7.x86_64.img
+  echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
 
   sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
   sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf

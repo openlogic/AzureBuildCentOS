@@ -147,6 +147,7 @@ chkconfig cups off
   rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
   rm -f /initramfs-2.6.32-431.el6.x86_64.img
   rm -f /boot/initramfs-2.6.32-431.el6.x86_64.img
+  echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
   chkconfig rdma on
 
   sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
