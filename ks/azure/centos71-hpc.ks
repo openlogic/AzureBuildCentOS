@@ -70,7 +70,7 @@ cifs-utils
 sudo
 python-pyasn1
 parted
-#WALinuxAgent
+WALinuxAgent
 msft-rdma-drivers
 selinux-policy-devel
 rdma
@@ -133,10 +133,6 @@ systemctl disable wpa_supplicant
 systemctl disable abrtd
 
 # Enable RDMA driver
-  ## Temp install test agent
-  curl -so /tmp/WALinuxAgent-2.0.18-2.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/7/WALinuxAgent-2.0.18-2.noarch.rpm
-  rpm -i /tmp/WALinuxAgent-2.0.18-2.noarch.rpm
-  rm -f /tmp/WALinuxAgent-2.0.18-2.noarch.rpm
 
   ## Install LIS4.1 with RDMA drivers
   cd /opt/microsoft/rdma/rhel71
@@ -164,9 +160,9 @@ EOF
 # Install Intel MPI
 MPI="l_mpi-rt_p_5.1.3.181"
 CFG="IntelMPI-silent.cfg"
-curl -so /tmp/${MPI}.tar.gz http://10.177.146.43/${MPI}.tar.gz  ## Internal link to MPI package
+curl -so /tmp/${MPI}.tgz http://10.177.146.43/${MPI}.tgz  ## Internal link to MPI package
 curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
-tar -C /tmp -zxf /tmp/${MPI}.tar.gz
+tar -C /tmp -zxf /tmp/${MPI}.tgz
 /tmp/${MPI}/install.sh --silent /tmp/${CFG}
 rm -rf /tmp/${MPI}* /tmp/${CFG}
 
