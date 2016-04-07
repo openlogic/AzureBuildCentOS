@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 6.7 Azure VM
+# Kickstart for provisioning a RHEL 6.7 Azure Stack VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -77,6 +77,7 @@ cifs-utils
 sudo
 python-pyasn1
 parted
+hypervkvpd
 #WALinuxAgent
 -dracut-config-rescue
 
@@ -138,5 +139,6 @@ chkconfig waagent on
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
+rm -f /etc/resolv.conf  # workaround
 
 %end

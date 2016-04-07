@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 7.1 Azure VM
+# Kickstart for provisioning a RHEL 7.1 Azure Stack VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -133,5 +133,6 @@ systemctl enable waagent.service
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
+rm -f /etc/resolv.conf  # workaround
 
 %end
