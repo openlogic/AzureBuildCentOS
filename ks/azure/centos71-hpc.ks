@@ -160,7 +160,7 @@ EOF
 # Install Intel MPI
 MPI="l_mpi-rt_p_5.1.3.181"
 CFG="IntelMPI-silent.cfg"
-curl -so /tmp/${MPI}.tgz http://10.177.146.43/${MPI}.tgz  ## Internal link to MPI package
+curl -so /tmp/${MPI}.tgz http://olmirror.openlogic.com/pub/azure/${MPI}.tgz  ## Internal link to MPI package
 curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
 tar -C /tmp -zxf /tmp/${MPI}.tgz
 /tmp/${MPI}/install.sh --silent /tmp/${CFG}
