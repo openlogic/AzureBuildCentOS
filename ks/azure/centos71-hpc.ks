@@ -78,6 +78,7 @@ librdmacm
 libmlx4
 dapl
 libibverbs
+kernel-headers
 -hypervkvpd
 -dracut-config-rescue
 

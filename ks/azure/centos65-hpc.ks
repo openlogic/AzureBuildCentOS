@@ -79,6 +79,7 @@ python-pyasn1
 parted
 WALinuxAgent
 msft-rdma-drivers
+kernel-headers
 -hypervkvpd
 -dracut-config-rescue
 
