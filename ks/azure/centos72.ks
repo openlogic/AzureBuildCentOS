@@ -38,7 +38,7 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
-part / --fstyp="xfs" --size=1 --grow --asprimary
+part / --fstype="xfs" --size=1 --grow --asprimary
 
 # System bootloader configuration
 bootloader --location=mbr

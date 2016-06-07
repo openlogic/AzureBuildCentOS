@@ -38,7 +38,7 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
-part / --fstyp="ext4" --size=1 --grow --asprimary
+part / --fstype="ext4" --size=1 --grow --asprimary
 
 # System bootloader configuration
 bootloader --location=mbr --append="console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300"
