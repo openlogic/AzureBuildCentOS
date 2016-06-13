@@ -110,6 +110,7 @@ TYPE=Ethernet
 USERCTL=no
 PEERDNS=yes
 IPV6INIT=no
+NM_CONTROLLED=no
 EOF
 
 cat << EOF > /etc/sysconfig/network
