@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 6.7 Azure VM
+# Kickstart for provisioning a RHEL 6.8 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,8 +19,8 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://vault.centos.org/6.7/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/6.7/updates/x86_64/
+url --url=http://olcentgbl.trafficmanager.net/centos/6.8/os/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/6.8/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
@@ -77,7 +77,7 @@ cifs-utils
 sudo
 python-pyasn1
 parted
-WALinuxAgent
+#WALinuxAgent
 -dracut-config-rescue
 
 %end
@@ -132,6 +132,12 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 
 # Disable some unneeded services by default (administrators can re-enable if desired)
 chkconfig cups off
+
+# TEMPORARY - Install the Azure Linux agent
+curl -so /root/WALinuxAgent-2.1.3-1.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/6/WALinuxAgent-2.1.3-1.noarch.rpm
+rpm -i /root/WALinuxAgent-2.1.3-1.noarch.rpm
+rm -f /root/WALinuxAgent-2.1.3-1.noarch.rpm
+chkconfig waagent on
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
