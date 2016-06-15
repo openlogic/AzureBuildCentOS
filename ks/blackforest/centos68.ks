@@ -104,6 +104,9 @@ curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/sz
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 
+# Modify yum
+echo "http_caching=packages" >> /etc/yum.conf
+
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
 
