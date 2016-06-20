@@ -70,7 +70,7 @@ cifs-utils
 sudo
 python-pyasn1
 parted
-#WALinuxAgent
+WALinuxAgent
 hypervkvpd
 -dracut-config-rescue
 
@@ -155,11 +155,11 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 systemctl disable wpa_supplicant
 systemctl disable abrtd
 
-# Install the Azure Linux agent
-curl -so /root/WALinuxAgent-2.1.3-1.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/7/WALinuxAgent-2.1.3-1.noarch.rpm
-rpm -i /root/WALinuxAgent-2.1.3-1.noarch.rpm
-rm -f /root/WALinuxAgent-2.1.3-1.noarch.rpm
-systemctl enable waagent.service
+# TEMPORARY - Install the Azure Linux agent
+#curl -so /root/WALinuxAgent-2.1.3-1.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/7/WALinuxAgent-2.1.3-1.noarch.rpm
+#rpm -i /root/WALinuxAgent-2.1.3-1.noarch.rpm
+#rm -f /root/WALinuxAgent-2.1.3-1.noarch.rpm
+#systemctl enable waagent.service
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
