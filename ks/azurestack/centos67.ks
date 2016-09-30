@@ -132,9 +132,9 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 chkconfig cups off
 
 # Install the Azure Linux agent
-curl -so /root/WALinuxAgent-2.1.3-1.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/6/WALinuxAgent-2.1.3-1.noarch.rpm
-rpm -i /root/WALinuxAgent-2.1.3-1.noarch.rpm
-rm -f /root/WALinuxAgent-2.1.3-1.noarch.rpm
+curl -so /root/WALinuxAgent-2.2.0-1.el6.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/6/WALinuxAgent-2.2.0-1.el6.noarch.rpm
+rpm -i /root/WALinuxAgent-2.2.0-1.el6.noarch.rpm
+rm -f /root/WALinuxAgent-2.2.0-1.el6.noarch.rpm
 chkconfig waagent on
 
 # Deprovision and prepare for Azure

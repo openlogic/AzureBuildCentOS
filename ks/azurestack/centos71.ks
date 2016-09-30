@@ -126,9 +126,9 @@ systemctl disable wpa_supplicant
 systemctl disable abrtd
 
 # Install the Azure Linux agent
-curl -so /root/WALinuxAgent-2.1.3-1.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/7/WALinuxAgent-2.1.3-1.noarch.rpm
-rpm -i /root/WALinuxAgent-2.1.3-1.noarch.rpm
-rm -f /root/WALinuxAgent-2.1.3-1.noarch.rpm
+curl -so /root/WALinuxAgent-2.2.0-1.el7.centos.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/7/WALinuxAgent-2.2.0-1.el7.centos.noarch.rpm
+rpm -i /root/WALinuxAgent-2.2.0-1.el7.centos.noarch.rpm
+rm -f /root/WALinuxAgent-2.2.0-1.el7.centos.noarch.rpm
 systemctl enable waagent.service
 
 # Deprovision and prepare for Azure
