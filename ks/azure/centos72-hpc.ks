@@ -143,8 +143,8 @@ systemctl disable abrtd
   rm -f /boot/initramfs-3.10.0-327.el7.x86_64.img
   echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
 
-  sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
-  sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
+  sed -i 's/# OS.EnableRDMA=y/OS.EnableRDMA=y/' /etc/waagent.conf
+  systemctl enable hv_kvp_daemon.service
 
 # Need to increase max locked memory
 echo -e "\n# Increase max locked memory for RDMA workloads" >> /etc/security/limits.conf
