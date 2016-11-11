@@ -38,7 +38,7 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
-part / --fstyp="ext4" --size=1 --grow --asprimary
+part / --fstype="ext4" --size=1 --grow --asprimary
 
 # System bootloader configuration
 bootloader --location=mbr
@@ -92,6 +92,9 @@ curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szark
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
+
+# Modify yum
+echo "http_caching=packages" >> /etc/yum.conf
 
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0"/g' /etc/default/grub

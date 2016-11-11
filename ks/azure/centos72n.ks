@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 7.1 Azure VM
+# Kickstart for provisioning a RHEL 7.2 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,8 +19,8 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://vault.centos.org/7.1.1503/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/7.1.1503/updates/x86_64/
+url --url=http://olcentgbl.trafficmanager.net/centos/7.2.1511/os/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.2.1511/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
@@ -38,7 +38,8 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
-part / --fstype="ext4" --size=1 --grow --asprimary
+part /boot --fstype="xfs" --size=500
+part / --fstype="xfs" --size=1 --grow --asprimary
 
 # System bootloader configuration
 bootloader --location=mbr
@@ -65,7 +66,7 @@ poweroff
 %packages
 @base
 @console-internet
-ntp
+chrony
 cifs-utils
 sudo
 python-pyasn1
@@ -113,11 +114,38 @@ TYPE=Ethernet
 USERCTL=no
 PEERDNS=yes
 IPV6INIT=no
+NM_CONTROLLED=no
 EOF
 
 cat << EOF > /etc/sysconfig/network
 NETWORKING=yes
 HOSTNAME=localhost.localdomain
+EOF
+
+# Deploy new configuration
+cat <<EOF > /etc/pam.d/system-auth-ac
+
+auth        required      pam_env.so
+auth        sufficient    pam_fprintd.so
+auth        sufficient    pam_unix.so nullok try_first_pass
+auth        requisite     pam_succeed_if.so uid >= 1000 quiet_success
+auth        required      pam_deny.so
+
+account     required      pam_unix.so
+account     sufficient    pam_localuser.so
+account     sufficient    pam_succeed_if.so uid < 1000 quiet
+account     required      pam_permit.so
+
+password    requisite     pam_pwquality.so try_first_pass local_users_only retry=3 authtok_type= ucredit=-1 lcredit=-1 dcredit=-1 ocredit=-1
+password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok remember=5
+password    required      pam_deny.so
+
+session     optional      pam_keyinit.so revoke
+session     required      pam_limits.so
+-session     optional      pam_systemd.so
+session     [success=1 default=ignore] pam_succeed_if.so service in crond quiet use_uid
+session     required      pam_unix.so
+
 EOF
 
 # Disable persistent net rules (FIXME: later we can just rely on net.ifnames)
@@ -128,7 +156,14 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 systemctl disable wpa_supplicant
 systemctl disable abrtd
 
+# TEMPORARY - Install the Azure Linux agent
+#curl -so /root/WALinuxAgent-2.1.3-1.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/7/WALinuxAgent-2.1.3-1.noarch.rpm
+#rpm -i /root/WALinuxAgent-2.1.3-1.noarch.rpm
+#rm -f /root/WALinuxAgent-2.1.3-1.noarch.rpm
+#systemctl enable waagent.service
+
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
+rm -f /etc/resolv.conf  # workaround
 
 %end

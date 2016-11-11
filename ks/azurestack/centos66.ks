@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 6.6 Azure VM
+# Kickstart for provisioning a RHEL 6.6 Azure Stack VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -38,7 +38,7 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
-part / --fstyp="ext4" --size=1 --grow --asprimary
+part / --fstype="ext4" --size=1 --grow --asprimary
 
 # System bootloader configuration
 bootloader --location=mbr --append="numa=off console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300"
@@ -77,6 +77,7 @@ cifs-utils
 sudo
 python-pyasn1
 parted
+hypervkvpd
 #WALinuxAgent
 -dracut-config-rescue
 
@@ -130,12 +131,13 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 chkconfig cups off
 
 # Install the Azure Linux agent
-curl -so /root/WALinuxAgent-2.1.3-1.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/6/WALinuxAgent-2.1.3-1.noarch.rpm
-rpm -i /root/WALinuxAgent-2.1.3-1.noarch.rpm
-rm -f /root/WALinuxAgent-2.1.3-1.noarch.rpm
+curl -so /root/WALinuxAgent-2.2.0-1.el6.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/6/WALinuxAgent-2.2.0-1.el6.noarch.rpm
+rpm -i /root/WALinuxAgent-2.2.0-1.el6.noarch.rpm
+rm -f /root/WALinuxAgent-2.2.0-1.el6.noarch.rpm
 chkconfig waagent on
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
+rm -f /etc/resolv.conf  # workaround
 
 %end

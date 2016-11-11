@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 7.1 Azure VM
+# Kickstart for provisioning a RHEL 7.2 Azure HPC VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,14 +19,14 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://vault.centos.org/7.1.1503/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/7.1.1503/updates/x86_64/
+url --url=http://olcentgbl.trafficmanager.net/centos/7.2.1511/os/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.2.1511/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,ntp,dnsmasq,NetworkManager"
+services --enabled="sshd,waagent,dnsmasq,NetworkManager"
 
 # System timezone
 timezone Etc/UTC --isUtc
@@ -71,7 +71,15 @@ sudo
 python-pyasn1
 parted
 WALinuxAgent
-hypervkvpd
+msft-rdma-drivers
+selinux-policy-devel
+rdma
+librdmacm
+libmlx4
+dapl
+libibverbs
+kernel-headers
+-hypervkvpd
 -dracut-config-rescue
 
 %end
@@ -91,9 +99,6 @@ curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szark
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
-
-# Modify yum
-echo "http_caching=packages" >> /etc/yum.conf
 
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0"/g' /etc/default/grub
@@ -120,13 +125,63 @@ NETWORKING=yes
 HOSTNAME=localhost.localdomain
 EOF
 
-# Disable persistent net rules (FIXME: later we can just rely on net.ifnames)
+# Disable persistent net rules
 touch /etc/udev/rules.d/75-persistent-net-generator.rules
-rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules
+rm -f /etc/udev/rules.d/70-persistent-net.rules
 
-# Disable some unneeded services by default (administrators can re-enable if desired)
+# Disable some unneeded services by default
 systemctl disable wpa_supplicant
 systemctl disable abrtd
+
+# Enable RDMA driver
+
+  ## Install LIS4.1 with RDMA drivers
+  cd /opt/microsoft/rdma/rhel72
+  rpm -i kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
+  rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
+  rm -f /initramfs-3.10.0-327.18.2.el7.x86_64.img
+  rm -f /boot/initramfs-3.10.0-327.el7.x86_64.img
+  echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
+
+  sed -i 's/# OS.EnableRDMA=y/OS.EnableRDMA=y/' /etc/waagent.conf
+  systemctl enable hv_kvp_daemon.service
+
+# Need to increase max locked memory
+echo -e "\n# Increase max locked memory for RDMA workloads" >> /etc/security/limits.conf
+echo '* soft memlock unlimited' >> /etc/security/limits.conf
+echo '* hard memlock unlimited' >> /etc/security/limits.conf
+
+# NetworkManager should ignore RDMA interface
+cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth1
+DEVICE=eth1
+ONBOOT=no
+NM_CONTROLLED=no 
+EOF
+
+# Install Intel MPI
+MPI="l_mpi-rt_p_5.1.3.181"
+CFG="IntelMPI-silent.cfg"
+curl -so /tmp/${MPI}.tgz http://olmirror.openlogic.com/pub/azure/${MPI}.tgz  ## Internal link to MPI package
+curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
+tar -C /tmp -zxf /tmp/${MPI}.tgz
+/tmp/${MPI}/install.sh --silent /tmp/${CFG}
+rm -rf /tmp/${MPI}* /tmp/${CFG}
+
+# Fix SELinux for Hyper-V daemons
+cat << EOF > /usr/share/selinux/devel/hyperv-daemons.te
+module hyperv-daemons 1.0;
+require {
+type hypervkvp_t;
+type device_t;
+type hypervvssd_t;
+class chr_file { read write open };
+}
+allow hypervkvp_t device_t:chr_file { read write open };
+allow hypervvssd_t device_t:chr_file { read write open };
+EOF
+cd /usr/share/selinux/devel
+make -f /usr/share/selinux/devel/Makefile hyperv-daemons.pp
+semodule -s targeted -i hyperv-daemons.pp
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision

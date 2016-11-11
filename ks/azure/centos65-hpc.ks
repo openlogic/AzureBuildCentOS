@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 6.7 Azure Stack VM
+# Kickstart for provisioning a RHEL 6.5 Azure HPC VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,14 +19,14 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://vault.centos.org/6.7/os/x86_64/Packages/
-repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/6.7/updates/x86_64/Packages/
+url --url=http://vault.centos.org/6.5/os/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/6.5/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,ntpd,dnsmasq,hypervkvpd"
+services --enabled="sshd,waagent,ntpd,dnsmasq"
 
 # System timezone
 timezone Etc/UTC --isUtc
@@ -41,7 +41,7 @@ zerombr
 part / --fstype="ext4" --size=1 --grow --asprimary
 
 # System bootloader configuration
-bootloader --location=mbr --append="console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300"
+bootloader --location=mbr --append="numa=off console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300"
 
 # Add OpenLogic repo
 repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/6/openlogic/x86_64/
@@ -77,8 +77,10 @@ cifs-utils
 sudo
 python-pyasn1
 parted
-hypervkvpd
-#WALinuxAgent
+WALinuxAgent
+msft-rdma-drivers
+kernel-headers
+-hypervkvpd
 -dracut-config-rescue
 
 %end
@@ -91,13 +93,12 @@ hypervkvpd
 usermod root -p '!!'
 
 # Remove unneeded parameters in grub
-sed -i 's/ numa=off//g' /boot/grub/grub.conf
 sed -i 's/ rhgb//g' /boot/grub/grub.conf
 sed -i 's/ quiet//g' /boot/grub/grub.conf
 sed -i 's/ crashkernel=auto//g' /boot/grub/grub.conf
 
 # Set OL repos
-#curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base.repo
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
@@ -131,14 +132,45 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 # Disable some unneeded services by default (administrators can re-enable if desired)
 chkconfig cups off
 
-# Install the Azure Linux agent
-curl -so /root/WALinuxAgent-2.2.0-1.el6.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/6/WALinuxAgent-2.2.0-1.el6.noarch.rpm
-rpm -i /root/WALinuxAgent-2.2.0-1.el6.noarch.rpm
-rm -f /root/WALinuxAgent-2.2.0-1.el6.noarch.rpm
-chkconfig waagent on
+# Enable RDMA driver
+
+  ## Need to pull these packages from latest 6.7 repo
+  yum -y install rdma librdmacm libmlx4 dapl libibverbs
+
+  ## Install LIS4.1 with RDMA drivers
+  cd /opt/microsoft/rdma/rhel65
+  rpm -i kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
+  rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
+  rm -f /initramfs-2.6.32-431.el6.x86_64.img
+  rm -f /boot/initramfs-2.6.32-431.el6.x86_64.img
+  echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
+  chkconfig rdma on
+
+  sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
+  sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
+
+# Need to increase max locked memory
+echo -e "\n# Increase max locked memory for RDMA workloads" >> /etc/security/limits.conf
+echo '* soft memlock unlimited' >> /etc/security/limits.conf
+echo '* hard memlock unlimited' >> /etc/security/limits.conf
+
+# NetworkManager should ignore RDMA interface
+cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth1
+DEVICE=eth1
+ONBOOT=no
+NM_CONTROLLED=no 
+EOF
+
+# Install Intel MPI
+MPI="l_mpi-rt_p_5.1.3.181"
+CFG="IntelMPI-silent.cfg"
+curl -so /tmp/${MPI}.tgz http://olmirror.openlogic.com/pub/azure/${MPI}.tgz  ## Internal link to MPI package
+curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
+tar -C /tmp -zxf /tmp/${MPI}.tgz
+/tmp/${MPI}/install.sh --silent /tmp/${CFG}
+rm -rf /tmp/${MPI}* /tmp/${CFG}
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
-rm -f /etc/resolv.conf  # workaround
 
 %end

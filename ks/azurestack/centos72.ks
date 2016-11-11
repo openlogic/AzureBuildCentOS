@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 7.2 Azure VM
+# Kickstart for provisioning a RHEL 7.2 Azure Stack VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -26,7 +26,7 @@ repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/cento
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,ntpd,dnsmasq,NetworkManager"
+services --enabled="sshd,dnsmasq,NetworkManager"
 
 # System timezone
 timezone Etc/UTC --isUtc
@@ -38,7 +38,7 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
-part / --fstyp="xfs" --size=1 --grow --asprimary
+part / --fstype="xfs" --size=1 --grow --asprimary
 
 # System bootloader configuration
 bootloader --location=mbr
@@ -110,6 +110,7 @@ TYPE=Ethernet
 USERCTL=no
 PEERDNS=yes
 IPV6INIT=no
+NM_CONTROLLED=no
 EOF
 
 cat << EOF > /etc/sysconfig/network
@@ -126,12 +127,13 @@ systemctl disable wpa_supplicant
 systemctl disable abrtd
 
 # Install the Azure Linux agent
-curl -so /root/WALinuxAgent-2.1.3-1.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/7/WALinuxAgent-2.1.3-1.noarch.rpm
-rpm -i /root/WALinuxAgent-2.1.3-1.noarch.rpm
-rm -f /root/WALinuxAgent-2.1.3-1.noarch.rpm
+curl -so /root/WALinuxAgent-2.2.0-1.el7.centos.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/7/WALinuxAgent-2.2.0-1.el7.centos.noarch.rpm
+rpm -i /root/WALinuxAgent-2.2.0-1.el7.centos.noarch.rpm
+rm -f /root/WALinuxAgent-2.2.0-1.el7.centos.noarch.rpm
 systemctl enable waagent.service
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
+rm -f /etc/resolv.conf  # workaround
 
 %end
