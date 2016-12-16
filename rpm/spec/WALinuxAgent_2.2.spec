@@ -2,14 +2,14 @@
 # Name: walinuxagent.spec
 #-------------------------------------------------------------------------------
 # Purpose : RPM Spec file for Python script packaging
-# Version : 2.2.0
+# Version : 2.2.2
 # Created : April 20 2012
 #===============================================================================
 
 %define name WALinuxAgent
-%define version 2.2.0
-%define unmangled_version 2.2.0
-%define unmangled_version 2.2.0
+%define version 2.2.2
+%define unmangled_version 2.2.2
+%define unmangled_version 2.2.2
 %define release 1
 
 %if 0%{?rhel} < 7
@@ -118,5 +118,7 @@ fi
 %defattr(-,root,root)
 
 %changelog
+* Fri Dec 16 2016 - mike.hagan@roguewave.com
+- Updated version to 2.2.2 for release
 * Fri Sep 30 2016 - walinuxagent@microsoft.com
 - Updated version to 2.2.0 for release
