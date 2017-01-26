@@ -1,3 +1,4 @@
+# Kickstart for provisioning a RHEL 7.3 Azure VM with LVM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
