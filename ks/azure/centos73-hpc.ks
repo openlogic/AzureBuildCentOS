@@ -137,11 +137,11 @@ systemctl disable abrtd
 # Enable RDMA driver
 
   ## Install LIS4.1 with RDMA drivers
-  cd /opt/microsoft/rdma/rhel72
+  cd /opt/microsoft/rdma/rhel73
   rpm -i kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
   rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
-  rm -f /initramfs-3.10.0-327.18.2.el7.x86_64.img
-  rm -f /boot/initramfs-3.10.0-327.el7.x86_64.img
+  rm -f /initramfs-3.10.0-514.el7.x86_64.img
+  rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img
   echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
 
   sed -i 's/# OS.EnableRDMA=y/OS.EnableRDMA=y/' /etc/waagent.conf

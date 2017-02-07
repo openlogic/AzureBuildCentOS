@@ -139,7 +139,7 @@ systemctl disable abrtd
   cd /opt/microsoft/rdma/rhel72
   rpm -i kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
   rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
-  rm -f /initramfs-3.10.0-327.18.2.el7.x86_64.img
+  rm -f /initramfs-3.10.0-327.el7.x86_64.img
   rm -f /boot/initramfs-3.10.0-327.el7.x86_64.img
   echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
 
