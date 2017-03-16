@@ -73,7 +73,6 @@ poweroff
 @base
 @console-internet
 chrony
-dhcpv6_client
 cifs-utils
 sudo
 python-pyasn1
