@@ -140,8 +140,8 @@ systemctl disable abrtd
   ## Install LIS4.1 with RDMA drivers
   ND="142"
   cd /opt/microsoft/rdma/rhel73
-  rpm -i microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
-  rpm -i kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
+  rpm -i --nopre microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
+  rpm -i --nopre kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
   rm -f /initramfs-3.10.0-514.el7.x86_64.img
   rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img
   echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
