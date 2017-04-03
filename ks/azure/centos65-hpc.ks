@@ -139,9 +139,10 @@ chkconfig cups off
   yum -y install rdma librdmacm libmlx4 dapl libibverbs
 
   ## Install LIS4.1 with RDMA drivers
+  ND="142"
   cd /opt/microsoft/rdma/rhel65
-  rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
-  rpm -i kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
+  rpm -i microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
+  rpm -i kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
   rm -f /initramfs-2.6.32-431.el6.x86_64.img
   rm -f /boot/initramfs-2.6.32-431.el6.x86_64.img
   echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
