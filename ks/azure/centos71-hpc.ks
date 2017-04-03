@@ -165,7 +165,7 @@ NM_CONTROLLED=no
 EOF
 
 # Install Intel MPI
-MPI="l_mpi-rt_2017.1.132"
+MPI="l_mpi-rt_2017.2.174"
 CFG="IntelMPI-silent.cfg"
 curl -so /tmp/${MPI}.tgz http://192.168.40.171/azure/${MPI}.tgz  ## Internal link to MPI package
 curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
