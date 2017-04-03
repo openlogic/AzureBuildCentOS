@@ -148,8 +148,8 @@ chkconfig cups off
   ## Install LIS4.1 with RDMA drivers
   ND="142"
   cd /opt/microsoft/rdma/rhel68
-  rpm -i --nopre microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
-  rpm -i --nopre kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
+  rpm -i --nopre microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm \
+                 kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
   rm -f /initramfs-2.6.32-642.el6.x86_64.img
   rm -f /boot/initramfs-2.6.32-642.el6.x86_64.img
   echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
