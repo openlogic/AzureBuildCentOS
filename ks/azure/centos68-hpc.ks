@@ -146,15 +146,19 @@ chkconfig cups off
 
   ## Install LIS4.1 with RDMA drivers
   cd /opt/microsoft/rdma/rhel68
-  rpm -i kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
   rpm -i microsoft-hyper-v-rdma-*.x86_64.rpm
+  rpm -i kmod-microsoft-hyper-v-rdma-*.x86_64.rpm
   rm -f /initramfs-2.6.32-642.el6.x86_64.img
   rm -f /boot/initramfs-2.6.32-642.el6.x86_64.img
   echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
   chkconfig rdma on
 
-  sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
-  sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
+  ## WALinuxAgent 2.2.x
+  sed -i 's/^\#\s*OS.EnableRDMA=.*/OS.EnableRDMA=y/' /etc/waagent.conf
+
+  ## WALinuxAgent 2.0.x
+  #sed -i 's/OS.UpdateRdmaDriver=n/OS.UpdateRdmaDriver=y/' /etc/waagent.conf
+  #sed -i 's/OS.CheckRdmaDriver=n/OS.CheckRdmaDriver=y/' /etc/waagent.conf
 
 # Need to increase max locked memory
 echo -e "\n# Increase max locked memory for RDMA workloads" >> /etc/security/limits.conf
