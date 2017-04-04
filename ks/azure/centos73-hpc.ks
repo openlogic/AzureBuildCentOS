@@ -97,6 +97,15 @@ usermod root -p '!!'
 curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 
+# HPC testing
+cat << EOF > /etc/yum.repos.d/rdma-test.repo
+[rdma-test]
+name=RDMA Test
+baseurl=http://szark-cnt6.cloudapp.net/repo/7/
+enabled=1
+gpgcheck=0
+EOF
+
 # Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
