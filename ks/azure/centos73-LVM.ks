@@ -48,7 +48,7 @@ logvol /home --vgname=rootvg --fstype=xfs --size=1024 --name=homelv
 logvol /usr --vgname=rootvg --fstype=xfs --size=10240 --name=usrlv
 
 # System bootloader configuration
-bootloader --location=mbr
+bootloader --location=mbr --timeout=1
 
 # Add OpenLogic repo
 repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/
