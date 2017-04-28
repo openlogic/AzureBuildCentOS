@@ -72,7 +72,7 @@ sudo
 python-pyasn1
 parted
 WALinuxAgent
-hypervkvpd
+-hypervkvpd
 -dracut-config-rescue
 
 %end
