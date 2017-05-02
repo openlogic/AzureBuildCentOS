@@ -165,6 +165,9 @@ rm -f /tmp/microsoft-hyper-v-4.2.0-20170420.x86_64.rpm \
 rm -f /initramfs-3.10.0-514.el7.x86_64.img
 rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img
 
+# Configure bonding for SR-IOV
+/usr/sbin/bondvf.sh
+
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
 rm -f /etc/resolv.conf 2>/dev/null # workaround old agent bug
