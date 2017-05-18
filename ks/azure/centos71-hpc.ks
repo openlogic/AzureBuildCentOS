@@ -79,6 +79,7 @@ libmlx4
 dapl
 libibverbs
 kernel-headers
+kernel-devel
 -hypervkvpd
 -dracut-config-rescue
 

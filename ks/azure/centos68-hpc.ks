@@ -80,6 +80,7 @@ parted
 WALinuxAgent
 msft-rdma-drivers
 kernel-headers
+kernel-devel
 -hypervkvpd
 -dracut-config-rescue
 
