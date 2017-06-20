@@ -174,7 +174,7 @@ EOF
 MPI="l_mpi-rt_p_5.1.3.181"
 CFG="IntelMPI-v5.x-silent.cfg"
 curl -so /tmp/${MPI}.tgz http://szark-cnt6.cloudapp.net/repo/rdma/${MPI}.tgz  ## Internal link to MPI package
-curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
+curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/szark-test-20170620/config/azure/${CFG}
 tar -C /tmp -zxf /tmp/${MPI}.tgz
 /tmp/${MPI}/install.sh --silent /tmp/${CFG}
 rm -rf /tmp/${MPI}* /tmp/${CFG}
