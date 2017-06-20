@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 7.3 Azure VM w/SRIOV support
+# Kickstart for provisioning a RHEL 7.3 Azure VM w/SRIOV networking support
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -109,11 +109,38 @@ sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
 DEVICE=eth0
 ONBOOT=yes
-BOOTPROTO=dhcp
+BOOTPROTO=none
 TYPE=Ethernet
 USERCTL=no
 PEERDNS=yes
-IPV6INIT=no
+IPV6INIT=yes
+MASTER=bond0
+SLAVE=yes
+NM_CONTROLLED=no
+EOF
+
+cat << EOF > /etc/sysconfig/network-scripts/ifcfg-vf1
+DEVICE=vf1
+ONBOOT=yes
+TYPE=Ethernet
+BOOTPROTO=none
+PEERDNS=yes
+IPV6INIT=yes
+MASTER=bond0
+SLAVE=yes
+NM_CONTROLLED=no
+EOF
+
+# Configure bonding for SR-IOV (bond synthetic and vf NICs)
+cat << EOF > /etc/sysconfig/network-scripts/ifcfg-bond0
+DEVICE=bond0
+TYPE=Bond
+BOOTPROTO=dhcp
+ONBOOT=yes
+PEERDNS=yes
+IPV6INIT=yes
+BONDING_MASTER=yes
+BONDING_OPTS="mode=active-backup miimon=100 primary=vf1"
 NM_CONTROLLED=no
 EOF
 
@@ -121,6 +148,14 @@ cat << EOF > /etc/sysconfig/network
 NETWORKING=yes
 HOSTNAME=localhost.localdomain
 EOF
+
+# Assign Hyper-V VF NICs to stable names
+curl -o /etc/udev/rules.d/60-hyperv-vf-name.rules https://raw.githubusercontent.com/LIS/lis-next/master/tools/sriov/60-hyperv-vf-name.rules
+
+# On HyperV/Azure VMs, we use VF serial number as the PCI domain. This number
+# is used as part of VF nic names for persistency.
+curl -o /usr/sbin/hv_vf_name https://raw.githubusercontent.com/LIS/lis-next/master/tools/sriov/hv_vf_name
+chmod 755 /usr/sbin/hv_vf_name
 
 # Deploy new configuration
 cat <<EOF > /etc/pam.d/system-auth-ac
@@ -155,18 +190,17 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 # Disable some unneeded services by default (administrators can re-enable if desired)
 systemctl disable abrtd
 
-# Install LIS 4.2 (includes SR-IOV support)
-curl -so /tmp/microsoft-hyper-v-4.2.0-20170420.x86_64.rpm https://lisrpm.blob.core.windows.net/centos73-u2/microsoft-hyper-v-4.2.0-20170420.x86_64.rpm
-curl -so /tmp/kmod-microsoft-hyper-v-4.2.0-20170420.x86_64.rpm https://lisrpm.blob.core.windows.net/centos73-u2/kmod-microsoft-hyper-v-4.2.0-20170420.x86_64.rpm
-rpm -i --nopre /tmp/microsoft-hyper-v-4.2.0-20170420.x86_64.rpm \
-               /tmp/kmod-microsoft-hyper-v-4.2.0-20170420.x86_64.rpm
-rm -f /tmp/microsoft-hyper-v-4.2.0-20170420.x86_64.rpm \
-      /tmp/kmod-microsoft-hyper-v-4.2.0-20170420.x86_64.rpm
+# Install LIS 4.2 (includes hv_pci support)
+LISHV="microsoft-hyper-v-4.2.1-20170602.x86_64.rpm"
+LISKMOD="kmod-microsoft-hyper-v-4.2.1-20170602.x86_64.rpm"
+curl -so /tmp/${LISHV} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISHV}
+curl -so /tmp/${LISKMOD} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISKMOD}
+rpm -i --nopre /tmp/${LISHV} \
+               /tmp/${LISKMOD}
+rm -f /tmp/${LISHV} \
+      /tmp/${LISKMOD}
 rm -f /initramfs-3.10.0-514.el7.x86_64.img
 rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img
-
-# Configure bonding for SR-IOV
-/usr/sbin/bondvf.sh
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
