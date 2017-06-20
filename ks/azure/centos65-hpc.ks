@@ -135,8 +135,11 @@ chkconfig cups off
 
 # Enable RDMA driver
 
-  ## Need to pull these packages from latest 6.7 repo
+  ## Need to pull these packages from latest 6.x repo
   yum -y install rdma librdmacm libmlx4 dapl libibverbs
+
+  ## Bug: update modinfo to prevent stuck process
+  yum -y install module-init-tools
 
   ## Install LIS4.1 with RDMA drivers
   ND="142"
