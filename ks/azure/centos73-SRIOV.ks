@@ -191,10 +191,10 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 systemctl disable abrtd
 
 # Install LIS 4.2 (includes hv_pci support)
-LISHV="microsoft-hyper-v-4.2.1-20170602.x86_64.rpm"
-LISKMOD="kmod-microsoft-hyper-v-4.2.1-20170602.x86_64.rpm"
-curl -so /tmp/${LISHV} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISHV}
-curl -so /tmp/${LISKMOD} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISKMOD}
+LISHV="microsoft-hyper-v-4.2.1-20170623.x86_64.rpm"
+LISKMOD="kmod-microsoft-hyper-v-4.2.1-20170623.x86_64.rpm"
+curl -so /tmp/${LISHV} http://szark-cnt6.cloudapp.net/repo/7/${LISHV}
+curl -so /tmp/${LISKMOD} http://szark-cnt6.cloudapp.net/repo/7/${LISKMOD}
 rpm -i --nopre /tmp/${LISHV} \
                /tmp/${LISKMOD}
 rm -f /tmp/${LISHV} \
