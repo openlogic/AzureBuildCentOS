@@ -199,8 +199,8 @@ rpm -i --nopre /tmp/${LISHV} \
                /tmp/${LISKMOD}
 rm -f /tmp/${LISHV} \
       /tmp/${LISKMOD}
-rm -f /initramfs-3.10.0-514.el7.x86_64.img
-rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img
+rm -f /initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
+rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
