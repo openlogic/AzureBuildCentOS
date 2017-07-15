@@ -149,6 +149,38 @@ NETWORKING=yes
 HOSTNAME=localhost.localdomain
 EOF
 
+# Run the bondvf.sh script once at first boot and bring up any new
+# bond* interfaces that were created.
+cat << EOF >> /etc/rc.d/rc.local
+
+## Configure bond device at first boot for SR-IOV enabled interfaces.
+if [ -f "/root/firstrun" ]; then
+	out=$(/sbin/bondvf.sh)
+	bond_ifs=$(echo "$out" | grep creating | sed 's/^creating:\s*//g' | sed 's/\s*with primary slave:\s*/:/')
+	ifs=$(echo "$out" | egrep '[0-9a-z]{2}:[0-9a-z]{2}:' | sed 's/\s*//g')
+	ifs_vf=$(echo "$ifs" | grep vf)
+	ifs_eth=$(echo "$ifs" | grep eth)
+
+	for if in $bond_ifs; do
+		bond=(${if//:/ })
+		if [ "${bond[0]}" != "bond0" ]; then
+			mac=$(echo "$ifs_vf" | grep "${bond[1]}" | awk -F, '{print $2}')
+			eth=$(echo "$ifs_eth" | grep "$mac" | awk -F, '{print $1}')
+
+			nmcli connection reload
+			ifdown $eth
+			ifdown ${bond[1]}
+			ifup $eth
+			ifup ${bond[1]}
+			ifup ${bond[0]}
+		fi
+	done
+	rm -f /root/firstrun
+fi
+EOF
+chmod 755 /etc/rc.d/rc.local
+touch /root/firstrun
+
 # Assign Hyper-V VF NICs to stable names
 curl -o /etc/udev/rules.d/60-hyperv-vf-name.rules https://raw.githubusercontent.com/LIS/lis-next/master/tools/sriov/60-hyperv-vf-name.rules
 
