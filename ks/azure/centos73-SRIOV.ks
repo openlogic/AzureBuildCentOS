@@ -235,7 +235,7 @@ rm -f /initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
 rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
 
 # Temporary: Test patched bondvf.sh script:
-curl -so /sbin/bondvf.sh https://raw.githubusercontent.com/szarkos/lis-next/6c313e02dc39b6483a0c28c0b664edcb84f8b3c5/hv-rhel7.x/hv/tools/bondvf.sh
+curl -so /sbin/bondvf.sh https://raw.githubusercontent.com/szarkos/lis-next/45e9490e9c3e07e3d48331ce18b6274582c74db2/hv-rhel7.x/hv/tools/bondvf.sh
 chmod 755 /sbin/bondvf.sh
 
 # Deprovision and prepare for Azure
