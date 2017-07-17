@@ -182,11 +182,11 @@ chmod 755 /etc/rc.d/rc.local
 touch /root/firstrun
 
 # Assign Hyper-V VF NICs to stable names
-curl -o /etc/udev/rules.d/60-hyperv-vf-name.rules https://raw.githubusercontent.com/LIS/lis-next/master/tools/sriov/60-hyperv-vf-name.rules
+curl -so /etc/udev/rules.d/60-hyperv-vf-name.rules https://raw.githubusercontent.com/LIS/lis-next/master/tools/sriov/60-hyperv-vf-name.rules
 
 # On HyperV/Azure VMs, we use VF serial number as the PCI domain. This number
 # is used as part of VF nic names for persistency.
-curl -o /usr/sbin/hv_vf_name https://raw.githubusercontent.com/LIS/lis-next/master/tools/sriov/hv_vf_name
+curl -so /usr/sbin/hv_vf_name https://raw.githubusercontent.com/LIS/lis-next/master/tools/sriov/hv_vf_name
 chmod 755 /usr/sbin/hv_vf_name
 
 # Deploy new configuration
@@ -233,6 +233,10 @@ rm -f /tmp/${LISHV} \
       /tmp/${LISKMOD}
 rm -f /initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
 rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
+
+# Temporary: Test patched bondvf.sh script:
+curl -so /sbin/bondvf.sh https://raw.githubusercontent.com/szarkos/lis-next/6c313e02dc39b6483a0c28c0b664edcb84f8b3c5/hv-rhel7.x/hv/tools/bondvf.sh
+chmod 755 /sbin/bondvf.sh
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
