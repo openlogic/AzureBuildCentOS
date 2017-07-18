@@ -225,8 +225,11 @@ systemctl disable abrtd
 # Install LIS 4.2 (includes hv_pci support)
 LISHV="microsoft-hyper-v-4.2.2-20170627.x86_64.rpm"
 LISKMOD="kmod-microsoft-hyper-v-4.2.2-20170627.x86_64.rpm"
-curl -so /tmp/${LISHV} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISHV}
-curl -so /tmp/${LISKMOD} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISKMOD}
+#curl -so /tmp/${LISHV} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISHV}
+#curl -so /tmp/${LISKMOD} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISKMOD}
+curl -so /tmp/${LISHV} https://lisrpm.blob.core.windows.net/centos73-u3/${LISHV}
+curl -so /tmp/${LISKMOD} https://lisrpm.blob.core.windows.net/centos73-u3/${LISKMOD}
+
 rpm -i --nopre /tmp/${LISHV} \
                /tmp/${LISKMOD}
 rm -f /tmp/${LISHV} \
