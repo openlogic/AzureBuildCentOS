@@ -151,7 +151,7 @@ EOF
 
 # Run the bondvf.sh script once at first boot and bring up any new
 # bond* interfaces that were created.
-cat << EOF >> /etc/rc.d/rc.local
+cat << 'EOF' >> /etc/rc.d/rc.local
 
 ## Configure bond device at first boot for SR-IOV enabled interfaces.
 if [ -f "/root/firstrun" ]; then
