@@ -105,6 +105,9 @@ grub2-mkconfig -o /boot/grub2/grub.cfg
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
 
+# Disable some unneeded services by default (administrators can re-enable if desired)
+systemctl disable abrtd
+
 # Configure network
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
 DEVICE=eth0
@@ -149,40 +152,29 @@ NETWORKING=yes
 HOSTNAME=localhost.localdomain
 EOF
 
-# Run the bondvf.sh script once at first boot and bring up any new
-# bond* interfaces that were created.
-cat << 'EOF' >> /etc/rc.d/rc.local
+# Disable persistent net rules
+touch /etc/udev/rules.d/75-persistent-net-generator.rules
+rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules 2>/dev/null
 
-## Configure bond device at first boot for SR-IOV enabled interfaces.
-if [ -f "/root/firstrun" ]; then
-	out=$(/sbin/bondvf.sh)
-	bond_ifs=$(echo "$out" | grep creating | sed 's/^creating:\s*//g' | sed 's/\s*with primary slave:\s*/:/')
-	ifs=$(echo "$out" | egrep '[0-9a-z]{2}:[0-9a-z]{2}:' | sed 's/\s*//g')
-	ifs_vf=$(echo "$ifs" | grep vf)
-	ifs_eth=$(echo "$ifs" | grep eth)
+# Install LIS 4.2 (includes hv_pci support)
+LISHV="microsoft-hyper-v-4.2.2-20170719.x86_64.rpm"
+LISKMOD="kmod-microsoft-hyper-v-4.2.2-20170719.x86_64.rpm"
+curl -so /tmp/${LISHV} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISHV}
+curl -so /tmp/${LISKMOD} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISKMOD}
 
-	for if in $bond_ifs; do
-		bond=(${if//:/ })
-		if [ "${bond[0]}" != "bond0" ]; then
-			mac=$(echo "$ifs_vf" | grep "${bond[1]}" | awk -F, '{print $2}')
-			eth=$(echo "$ifs_eth" | grep "$mac" | awk -F, '{print $1}')
+rpm -i --nopre /tmp/${LISHV} \
+               /tmp/${LISKMOD}
+rm -f /tmp/${LISHV} \
+      /tmp/${LISKMOD}
+rm -f /initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
+rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
 
-			nmcli connection reload
-			ifdown $eth
-			ifdown ${bond[1]}
-			ifup $eth
-			ifup ${bond[1]}
-			ifup ${bond[0]}
-		fi
-	done
-	rm -f /root/firstrun
-fi
-EOF
-chmod 755 /etc/rc.d/rc.local
-touch /root/firstrun
+# Use the latest bondvf.sh script
+curl -so /sbin/bondvf.sh https://raw.githubusercontent.com/szarkos/lis-next/9ce1b879e3cc18347b56b839a8483cc5bdcc1866/hv-rhel7.x/hv/tools/bondvf.sh
+chmod 755 /sbin/bondvf.sh
 
 # Assign Hyper-V VF NICs to stable names
-curl -so /etc/udev/rules.d/60-hyperv-vf-name.rules https://raw.githubusercontent.com/LIS/lis-next/master/tools/sriov/60-hyperv-vf-name.rules
+curl -so /etc/udev/rules.d/60-hyperv-sriov.rules https://raw.githubusercontent.com/szarkos/lis-next/9ce1b879e3cc18347b56b839a8483cc5bdcc1866/tools/sriov/60-hyperv-sriov.rules
 
 # On HyperV/Azure VMs, we use VF serial number as the PCI domain. This number
 # is used as part of VF nic names for persistency.
@@ -214,30 +206,6 @@ session     [success=1 default=ignore] pam_succeed_if.so service in crond quiet 
 session     required      pam_unix.so
 
 EOF
-
-# Disable persistent net rules
-touch /etc/udev/rules.d/75-persistent-net-generator.rules
-rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules 2>/dev/null
-
-# Disable some unneeded services by default (administrators can re-enable if desired)
-systemctl disable abrtd
-
-# Install LIS 4.2 (includes hv_pci support)
-LISHV="microsoft-hyper-v-4.2.2-20170719.x86_64.rpm"
-LISKMOD="kmod-microsoft-hyper-v-4.2.2-20170719.x86_64.rpm"
-curl -so /tmp/${LISHV} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISHV}
-curl -so /tmp/${LISKMOD} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISKMOD}
-
-rpm -i --nopre /tmp/${LISHV} \
-               /tmp/${LISKMOD}
-rm -f /tmp/${LISHV} \
-      /tmp/${LISKMOD}
-rm -f /initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
-rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
-
-# Temporary: Use the latest bondvf.sh script:
-curl -so /sbin/bondvf.sh https://raw.githubusercontent.com/LIS/lis-next/master/hv-rhel7.x/hv/tools/bondvf.sh
-chmod 755 /sbin/bondvf.sh
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
