@@ -170,7 +170,7 @@ rm -f /initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
 rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
 
 # Use the latest bondvf.sh script
-curl -so /sbin/bondvf.sh https://raw.githubusercontent.com/szarkos/lis-next/9ce1b879e3cc18347b56b839a8483cc5bdcc1866/hv-rhel7.x/hv/tools/bondvf.sh
+curl -so /sbin/bondvf.sh https://raw.githubusercontent.com/szarkos/lis-next/2aae2830592e57ef3a67e729cfaae4af9d0099db/hv-rhel7.x/hv/tools/bondvf.sh
 chmod 755 /sbin/bondvf.sh
 
 # Assign Hyper-V VF NICs to stable names
