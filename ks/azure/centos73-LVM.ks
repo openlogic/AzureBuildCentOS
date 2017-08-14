@@ -38,14 +38,16 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
-part /boot --fstype xfs --size=1024
-part pv.01 --fstype="lvmpv" --size=1000 --grow
+part /boot --fstype=ext4 --size=1024
+part pv.01 --fstype=lvmpv --size=1000 --grow
 volgroup rootvg pv.01
-logvol / --vgname=rootvg --fstype=xfs --size=6144 --name=rootlv
-logvol /var --vgname=rootvg --fstype=xfs --size=8192 --name=varlv
-logvol /tmp --vgname=rootvg --fstype=xfs --size=2048 --name=tmplv
-logvol /home --vgname=rootvg --fstype=xfs --size=1024 --name=homelv
-logvol /usr --vgname=rootvg --fstype=xfs --size=10240 --name=usrlv
+logvol / --vgname=rootvg --fstype=ext4 --size=8192 --name=rootlv
+logvol /var --vgname=rootvg --fstype=ext4 --size=8192 --name=varlv
+logvol /home --vgname=rootvg --fstype=ext4 --size=1024 --name=homelv
+logvol /opt --vgname=rootvg --fstype=ext4 --size=2048 --name=optlv
+logvol swap --vgname=rootvg --fstype=swap --size=2048 --name=swaplv
+logvol /usr --vgname=rootvg --fstype=ext4 --size=10240 --name=usrlv
+logvol /tmp --vgname=rootvg --fstype=ext4 --size=2048 --name=tmplv
 
 # System bootloader configuration
 bootloader --location=mbr --timeout=1
