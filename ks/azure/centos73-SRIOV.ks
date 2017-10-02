@@ -108,7 +108,8 @@ sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
 # Disable some unneeded services by default (administrators can re-enable if desired)
 systemctl disable abrtd
 
-# Configure network
+# Configure networking for eth0.
+# Disable NetworkManager handling of the SRIOV "vf" interfaces
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
 DEVICE=eth0
 ONBOOT=yes
@@ -122,29 +123,16 @@ SLAVE=yes
 NM_CONTROLLED=no
 EOF
 
-cat << EOF > /etc/sysconfig/network-scripts/ifcfg-vf1
-DEVICE=vf1
-ONBOOT=yes
-TYPE=Ethernet
-BOOTPROTO=none
-PEERDNS=yes
-IPV6INIT=yes
-MASTER=bond0
-SLAVE=yes
-NM_CONTROLLED=no
-EOF
+cat << EOF > /etc/NetworkManager/conf.d/10-azure-sriov.conf
+# Accelerated Networking on Azure exposes a new SRIOV interface to the VM (vf*).
+# This interface is transparently bonded to the synthetic eth* interface,
+# so NetworkManager should just ignore the vf* interfaces.
+#
+# More information about Accelerated Networking on Azure:
+#   https://docs.microsoft.com/azure/virtual-network/virtual-network-create-vm-accelerated-networking
 
-# Configure bonding for SR-IOV (bond synthetic and vf NICs)
-cat << EOF > /etc/sysconfig/network-scripts/ifcfg-bond0
-DEVICE=bond0
-TYPE=Bond
-BOOTPROTO=dhcp
-ONBOOT=yes
-PEERDNS=yes
-IPV6INIT=yes
-BONDING_MASTER=yes
-BONDING_OPTS="mode=active-backup miimon=100 primary=vf1"
-NM_CONTROLLED=no
+[keyfile]
+unmanaged-devices=interface-name:vf*
 EOF
 
 cat << EOF > /etc/sysconfig/network
@@ -157,8 +145,8 @@ touch /etc/udev/rules.d/75-persistent-net-generator.rules
 rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules 2>/dev/null
 
 # Install LIS 4.2 (includes hv_pci support)
-LISHV="microsoft-hyper-v-4.2.2-20170719.x86_64.rpm"
-LISKMOD="kmod-microsoft-hyper-v-4.2.2-20170719.x86_64.rpm"
+LISHV="microsoft-hyper-v-4.2.3-20170925.x86_64.rpm"
+LISKMOD="kmod-microsoft-hyper-v-4.2.3-20170925.x86_64.rpm"
 curl -so /tmp/${LISHV} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISHV}
 curl -so /tmp/${LISKMOD} http://olcentgbl.trafficmanager.net/openlogic/7.3.1611/openlogic/x86_64/RPMS/${LISKMOD}
 
@@ -168,18 +156,6 @@ rm -f /tmp/${LISHV} \
       /tmp/${LISKMOD}
 rm -f /initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
 rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
-
-# Use the latest bondvf.sh script
-curl -so /usr/sbin/bondvf.sh https://raw.githubusercontent.com/szarkos/lis-next/1c410a133298f1dd4ace494e6f819a05a24865dd/hv-rhel7.x/hv/tools/bondvf.sh
-chmod 755 /usr/sbin/bondvf.sh
-
-# Assign Hyper-V VF NICs to stable names
-curl -so /etc/udev/rules.d/60-hyperv-sriov.rules https://raw.githubusercontent.com/szarkos/lis-next/9ce1b879e3cc18347b56b839a8483cc5bdcc1866/tools/sriov/60-hyperv-sriov.rules
-
-# On HyperV/Azure VMs, we use VF serial number as the PCI domain. This number
-# is used as part of VF nic names for persistency.
-curl -so /usr/sbin/hv_vf_name https://raw.githubusercontent.com/LIS/lis-next/master/tools/sriov/hv_vf_name
-chmod 755 /usr/sbin/hv_vf_name
 
 # Deploy new configuration
 cat <<EOF > /etc/pam.d/system-auth-ac
