@@ -123,18 +123,6 @@ SLAVE=yes
 NM_CONTROLLED=no
 EOF
 
-cat << EOF > /etc/NetworkManager/conf.d/10-azure-sriov.conf
-# Accelerated Networking on Azure exposes a new SRIOV interface to the VM (vf*).
-# This interface is transparently bonded to the synthetic eth* interface,
-# so NetworkManager should just ignore the vf* interfaces.
-#
-# More information about Accelerated Networking on Azure:
-#   https://docs.microsoft.com/azure/virtual-network/virtual-network-create-vm-accelerated-networking
-
-[keyfile]
-unmanaged-devices=interface-name:vf*
-EOF
-
 cat << EOF > /etc/sysconfig/network
 NETWORKING=yes
 HOSTNAME=localhost.localdomain
@@ -143,6 +131,9 @@ EOF
 # Disable persistent net rules
 touch /etc/udev/rules.d/75-persistent-net-generator.rules
 rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules 2>/dev/null
+
+# Udev rule for NetworkManager to ignore any SRIOV interfaces
+curl -so /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/68-azure-sriov-nm-unmanaged.rules
 
 # Install LIS 4.2 (includes hv_pci support)
 LISHV="microsoft-hyper-v-4.2.3-20170925.x86_64.rpm"
