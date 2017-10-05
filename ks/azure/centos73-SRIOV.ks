@@ -112,13 +112,11 @@ systemctl disable abrtd
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
 DEVICE=eth0
 ONBOOT=yes
-BOOTPROTO=none
+BOOTPROTO=dhcp
 TYPE=Ethernet
 USERCTL=no
 PEERDNS=yes
-IPV6INIT=yes
-MASTER=bond0
-SLAVE=yes
+IPV6INIT=no
 NM_CONTROLLED=no
 EOF
 
