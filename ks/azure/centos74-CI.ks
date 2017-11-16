@@ -163,6 +163,11 @@ systemctl disable abrtd
 sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
 sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
 
+# Update the default cloud.cfg to enable disk_setup and related modules.
+# See: https://github.com/szarkos/AzureBuildCentOS/pull/23
+mv /etc/cloud/cloud.cfg /etc/cloud/cloud.cfg.old
+curl -so /etc/cloud/cloud.cfg https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/cloud.cfg
+
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
 rm -f /etc/resolv.conf 2>/dev/null # workaround old agent bug
