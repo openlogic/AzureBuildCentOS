@@ -74,6 +74,7 @@ parted
 WALinuxAgent
 hypervkvpd
 cloud-init
+gdisk
 -dracut-config-rescue
 
 %end
@@ -159,14 +160,31 @@ curl -so /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules https://raw.githubu
 # Disable some unneeded services by default (administrators can re-enable if desired)
 systemctl disable abrtd
 
-# Disable provisioning in waagent.conf
+# Disable provisioning and ephemeral disk handling in waagent.conf
 sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
 sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
+sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
+sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
 
 # Update the default cloud.cfg to enable disk_setup and related modules.
 # See: https://github.com/szarkos/AzureBuildCentOS/pull/23
 mv /etc/cloud/cloud.cfg /etc/cloud/cloud.cfg.old
 curl -so /etc/cloud/cloud.cfg https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/cloud.cfg
+
+# Allow only Azure datasource
+cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+# This configuration file is provided by the WALinuxAgent package.
+datasource_list: [ Azure ]
+EOF
+
+# Add preview banner to MOTD
+cat >> /etc/motd << EOF
+*******************************************************
+** This is a preview image that uses cloud-init for  **
+** VM provisioning. Implementation may change during **
+** the preview phase.                                **
+*******************************************************
+EOF
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
