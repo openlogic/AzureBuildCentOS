@@ -138,7 +138,7 @@ systemctl disable abrtd
 # Enable RDMA driver
 
   ## Install LIS4.1 with RDMA drivers
-  ND="142"
+  ND="144"
   cd /opt/microsoft/rdma/rhel73
   rpm -i --nopre microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm \
                  kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm

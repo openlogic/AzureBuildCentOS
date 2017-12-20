@@ -142,7 +142,7 @@ chkconfig cups off
   yum -y install module-init-tools
 
   ## Install LIS4.1 with RDMA drivers
-  ND="142"
+  ND="144"
   cd /opt/microsoft/rdma/rhel65
   rpm -i --nopre microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm \
                  kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
