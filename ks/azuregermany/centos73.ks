@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 7.0 Azure VM
+# Kickstart for provisioning a RHEL 7.3 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,14 +19,14 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://vault.centos.org/7.0.1406/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/7.0.1406/updates/x86_64/
+url --url=http://olcentgbl.trafficmanager.net/centos/7.3.1611/os/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.3.1611/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,ntp,dnsmasq,NetworkManager"
+services --enabled="sshd,waagent,dnsmasq,NetworkManager"
 
 # System timezone
 timezone Etc/UTC --isUtc
@@ -38,7 +38,8 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
-part / --fstype="ext4" --size=1 --grow --asprimary
+part /boot --fstype="xfs" --size=500
+part / --fstype="xfs" --size=1 --grow --asprimary
 
 # System bootloader configuration
 bootloader --location=mbr --timeout=1
@@ -59,14 +60,13 @@ skipx
 poweroff
 
 # Disable kdump
-# This parameter not valid for CentOS 7.0
-#%addon com_redhat_kdump --disable
-#%end
+%addon com_redhat_kdump --disable
+%end
 
 %packages
 @base
 @console-internet
-ntp
+chrony
 cifs-utils
 sudo
 python-pyasn1
@@ -85,7 +85,7 @@ hypervkvpd
 usermod root -p '!!'
 
 # Set OL repos
-#curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
@@ -114,6 +114,8 @@ TYPE=Ethernet
 USERCTL=no
 PEERDNS=yes
 IPV6INIT=no
+NM_CONTROLLED=no
+PERSISTENT_DHCLIENT=yes
 EOF
 
 cat << EOF > /etc/sysconfig/network
@@ -121,15 +123,41 @@ NETWORKING=yes
 HOSTNAME=localhost.localdomain
 EOF
 
-# Disable persistent net rules (FIXME: later we can just rely on net.ifnames)
+# Deploy new configuration
+cat <<EOF > /etc/pam.d/system-auth-ac
+
+auth        required      pam_env.so
+auth        sufficient    pam_fprintd.so
+auth        sufficient    pam_unix.so nullok try_first_pass
+auth        requisite     pam_succeed_if.so uid >= 1000 quiet_success
+auth        required      pam_deny.so
+
+account     required      pam_unix.so
+account     sufficient    pam_localuser.so
+account     sufficient    pam_succeed_if.so uid < 1000 quiet
+account     required      pam_permit.so
+
+password    requisite     pam_pwquality.so try_first_pass local_users_only retry=3 authtok_type= ucredit=-1 lcredit=-1 dcredit=-1 ocredit=-1
+password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok remember=5
+password    required      pam_deny.so
+
+session     optional      pam_keyinit.so revoke
+session     required      pam_limits.so
+-session     optional      pam_systemd.so
+session     [success=1 default=ignore] pam_succeed_if.so service in crond quiet use_uid
+session     required      pam_unix.so
+
+EOF
+
+# Disable persistent net rules
 touch /etc/udev/rules.d/75-persistent-net-generator.rules
-rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules
+rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules 2>/dev/null
 
 # Disable some unneeded services by default (administrators can re-enable if desired)
-systemctl disable wpa_supplicant
 systemctl disable abrtd
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
+rm -f /etc/resolv.conf 2>/dev/null # workaround old agent bug
 
 %end

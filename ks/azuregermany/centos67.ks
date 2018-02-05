@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 6.6 Azure VM
+# Kickstart for provisioning a RHEL 6.7 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,8 +19,8 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://vault.centos.org/6.6/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/6.6/updates/x86_64/
+url --url=http://vault.centos.org/6.7/os/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://vault.centos.org/6.7/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
@@ -41,7 +41,7 @@ zerombr
 part / --fstype="ext4" --size=1 --grow --asprimary
 
 # System bootloader configuration
-bootloader --location=mbr --append="numa=off console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 disable_mtrr_trim" --timeout=1
+bootloader --location=mbr --append="console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 disable_mtrr_trim" --timeout=1
 
 # Add OpenLogic repo
 repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/6/openlogic/x86_64/
@@ -90,12 +90,13 @@ WALinuxAgent
 usermod root -p '!!'
 
 # Remove unneeded parameters in grub
+sed -i 's/ numa=off//g' /boot/grub/grub.conf
 sed -i 's/ rhgb//g' /boot/grub/grub.conf
 sed -i 's/ quiet//g' /boot/grub/grub.conf
 sed -i 's/ crashkernel=auto//g' /boot/grub/grub.conf
 
 # Set OL repos
-#curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base.repo
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
@@ -109,6 +110,9 @@ echo "http_caching=packages" >> /etc/yum.conf
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
 
+# Changing password retrictions defined by CIS CentOS Linux 6 Benchmark
+sudo sed -i 's/pam_cracklib.so try_first_pass retry=3 type=/\pam_cracklib.so try_first_pass retry=3 minlen=14 dcredit=-1 ucredit=-1 ocredit=-1 lcredit=-1/g' /etc/pam.d/system-auth
+
 # Configure network
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
 DEVICE=eth0
@@ -118,6 +122,7 @@ TYPE=Ethernet
 USERCTL=no
 PEERDNS=yes
 IPV6INIT=no
+PERSISTENT_DHCLIENT=yes
 EOF
 
 cat << EOF > /etc/sysconfig/network

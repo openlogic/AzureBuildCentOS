@@ -1,4 +1,4 @@
-# Kickstart for provisioning a RHEL 7.2 Azure VM
+# Kickstart for provisioning a CentOS 7.4 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,14 +19,14 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://olcentgbl.trafficmanager.net/centos/7.2.1511/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.2.1511/updates/x86_64/
+url --url=http://olcentgbl.trafficmanager.net/centos/7.4.1708/os/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.4.1708/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,ntp,dnsmasq,NetworkManager"
+services --enabled="sshd,waagent,dnsmasq,NetworkManager"
 
 # System timezone
 timezone Etc/UTC --isUtc
@@ -38,6 +38,7 @@ clearpart --all --initlabel
 zerombr
 
 # Disk partitioning information
+part /boot --fstype="xfs" --size=500
 part / --fstype="xfs" --size=1 --grow --asprimary
 
 # System bootloader configuration
@@ -72,6 +73,7 @@ python-pyasn1
 parted
 WALinuxAgent
 hypervkvpd
+azure-repo-svc 
 -dracut-config-rescue
 
 %end
@@ -84,7 +86,7 @@ hypervkvpd
 usermod root -p '!!'
 
 # Set OL repos
-#curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
@@ -114,6 +116,7 @@ USERCTL=no
 PEERDNS=yes
 IPV6INIT=no
 NM_CONTROLLED=no
+PERSISTENT_DHCLIENT=yes
 EOF
 
 cat << EOF > /etc/sysconfig/network
@@ -147,15 +150,18 @@ session     required      pam_unix.so
 
 EOF
 
-# Disable persistent net rules (FIXME: later we can just rely on net.ifnames)
+# Disable persistent net rules
 touch /etc/udev/rules.d/75-persistent-net-generator.rules
-rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules
+rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules 2>/dev/null
+
+# Disable NetworkManager handling of the SRIOV interfaces
+curl -so /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules https://raw.githubusercontent.com/LIS/lis-next/master/rpmbuild/rh7/SOURCES/68-azure-sriov-nm-unmanaged.rules
 
 # Disable some unneeded services by default (administrators can re-enable if desired)
-systemctl disable wpa_supplicant
 systemctl disable abrtd
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
+rm -f /etc/resolv.conf 2>/dev/null # workaround old agent bug
 
 %end
