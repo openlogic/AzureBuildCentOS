@@ -122,6 +122,7 @@ TYPE=Ethernet
 USERCTL=no
 PEERDNS=yes
 IPV6INIT=no
+PERSISTENT_DHCLIENT=yes
 EOF
 
 cat << EOF > /etc/sysconfig/network
