@@ -143,8 +143,8 @@ systemctl disable abrtd
   cd /opt/microsoft/rdma/rhel73
   rpm -i --nopre microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm \
                  kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
-  rm -f /initramfs-3.10.0-514.el7.x86_64.img
-  rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img
+  rm -f /initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
+  rm -f /boot/initramfs-3.10.0-514.el7.x86_64.img 2>/dev/null
   echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
 
   ## WALinuxAgent 2.2.x
