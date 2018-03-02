@@ -156,7 +156,7 @@ touch /etc/udev/rules.d/75-persistent-net-generator.rules
 rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules 2>/dev/null
 
 # Disable NetworkManager handling of the SRIOV interfaces
-curl -so /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules https://raw.githubusercontent.com/LIS/lis-next/master/rpmbuild/rh7/SOURCES/68-azure-sriov-nm-unmanaged.rules
+curl -so /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules https://raw.githubusercontent.com/LIS/lis-next/master/hv-rhel7.x/hv/tools/68-azure-sriov-nm-unmanaged.rules
 
 # Disable some unneeded services by default (administrators can re-enable if desired)
 systemctl disable abrtd
