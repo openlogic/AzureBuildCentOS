@@ -50,7 +50,7 @@ logvol /usr --vgname=rootvg --fstype=ext4 --size=10240 --name=usrlv
 logvol /tmp --vgname=rootvg --fstype=ext4 --size=2048 --name=tmplv
 
 # System bootloader configuration
-bootloader --location=mbr --timeout=5
+bootloader --location=mbr --timeout=1
 
 # Add OpenLogic repo
 repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/
@@ -108,7 +108,8 @@ echo "http_caching=packages" >> /etc/yum.conf
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0"/g' /etc/default/grub
 
 # Enable grub serial console
-sed -i 's/^\(GRUB_TERMINAL\)=".*"$/\1="serial console"/g' /etc/default/grub
+echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"' >> /etc/default/grub
+sed -i 's/^GRUB_TERMINAL_OUTPUT=".*"$/GRUB_TERMINAL="serial console"/g' /etc/default/grub
 
 # Rebuild grub.cfg
 grub2-mkconfig -o /boot/grub2/grub.cfg

@@ -42,7 +42,7 @@ part /boot --fstype="xfs" --size=500
 part / --fstype="xfs" --size=1 --grow --asprimary
 
 # System bootloader configuration
-bootloader --location=mbr --timeout=5
+bootloader --location=mbr --timeout=1
 
 # Add OpenLogic repo
 repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/
@@ -106,7 +106,8 @@ rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0"/g' /etc/default/grub
 
 # Enable grub serial console
-sed -i 's/^\(GRUB_TERMINAL\)=".*"$/\1="serial console"/g' /etc/default/grub
+echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"' >> /etc/default/grub
+sed -i 's/^GRUB_TERMINAL_OUTPUT=".*"$/GRUB_TERMINAL="serial console"/g' /etc/default/grub
 
 # Rebuild grub.cfg
 grub2-mkconfig -o /boot/grub2/grub.cfg
