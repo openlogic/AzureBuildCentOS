@@ -101,6 +101,16 @@ echo "http_caching=packages" >> /etc/yum.conf
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0"/g' /etc/default/grub
 
+# Enable grub serial console
+echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"' >> /etc/default/grub
+sed -i 's/^GRUB_TERMINAL_OUTPUT=".*"$/GRUB_TERMINAL="serial console"/g' /etc/default/grub
+
+# Blacklist the nouveau driver
+cat << EOF > /etc/modprobe.d/blacklist-nouveau.conf
+blacklist nouveau
+options nouveau modeset=0
+EOF
+
 # Rebuild grub.cfg
 grub2-mkconfig -o /boot/grub2/grub.cfg
 
@@ -175,6 +185,25 @@ curl -so /etc/cloud/cloud.cfg https://raw.githubusercontent.com/szarkos/AzureBui
 cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
 # This configuration file is provided by the WALinuxAgent package.
 datasource_list: [ Azure ]
+EOF
+
+cat > /etc/cloud/hostnamectl-wrapper.sh <<\EOF
+#!/bin/bash -e
+if [[ -n $1 ]]; then
+  hostnamectl set-hostname $1
+else
+  hostname
+fi
+EOF
+
+chmod 0755 /etc/cloud/hostnamectl-wrapper.sh
+
+cat > /etc/cloud/cloud.cfg.d/90-hostnamectl-workaround-azure.cfg <<EOF
+# local	fix to ensure hostname is registered
+datasource:
+  Azure:
+    hostname_bounce:
+      hostname_command: /etc/cloud/hostnamectl-wrapper.sh
 EOF
 
 # Add preview banner to MOTD
