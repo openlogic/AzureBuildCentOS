@@ -109,6 +109,12 @@ sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 
 echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"' >> /etc/default/grub
 sed -i 's/^GRUB_TERMINAL_OUTPUT=".*"$/GRUB_TERMINAL="serial console"/g' /etc/default/grub
 
+# Blacklist the nouveau driver
+cat << EOF > /etc/modprobe.d/blacklist-nouveau.conf
+blacklist nouveau
+options nouveau modeset=0
+EOF
+
 # Rebuild grub.cfg
 grub2-mkconfig -o /boot/grub2/grub.cfg
 
@@ -173,7 +179,8 @@ EOF
 # Install Intel MPI
 MPI="l_mpi-rt_p_5.1.3.223"
 CFG="IntelMPI-v5.x-silent.cfg"
-curl -so /tmp/${MPI}.tgz http://192.168.40.171/azure/${MPI}.tgz  ## Internal link to MPI package
+##curl -so /tmp/${MPI}.tgz http://192.168.40.171/azure/${MPI}.tgz  ## Internal link to MPI package
+curl -so /tmp/${MPI}.tgz http://olcentwus.cloudapp.net/openlogic/${MPI}.tgz  ## Link to MPI package
 curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
 tar -C /tmp -zxf /tmp/${MPI}.tgz
 /tmp/${MPI}/install.sh --silent /tmp/${CFG}
