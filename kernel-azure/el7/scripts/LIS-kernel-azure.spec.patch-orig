@@ -1,0 +1,47 @@
+--- kernel.spec.orig	2018-06-12 22:37:18.452032539 +0000
++++ kernel.spec	2018-06-12 22:44:41.255814590 +0000
+@@ -7,6 +7,10 @@
+ 
+ # % define buildid .local
+ 
++# This is an Azure-tuned kernel variant
++%define variant -azure
++%define azuretag azure
++
+ # For a kernel released for public testing, released_kernel should be 1.
+ # For internal testing builds during development, it should be 0.
+ %global released_kernel 1
+@@ -322,7 +326,7 @@
+ Release: %{pkg_release}
+ # DO NOT CHANGE THE 'ExclusiveArch' LINE TO TEMPORARILY EXCLUDE AN ARCHITECTURE BUILD.
+ # SET %%nobuildarches (ABOVE) INSTEAD
+-ExclusiveArch: noarch i686 x86_64 ppc ppc64 ppc64le s390 s390x
++ExclusiveArch: noarch x86_64 
+ ExclusiveOS: Linux
+ 
+ %kernel_reqprovconf
+@@ -434,6 +438,7 @@
+ Patch1000: debrand-single-cpu.patch
+ Patch1001: debrand-rh_taint.patch
+ Patch1002: debrand-rh-i686-cpu.patch
++Patch1003: LIS.patch
+ 
+ BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
+ 
+@@ -755,6 +760,7 @@
+ ApplyOptionalPatch debrand-single-cpu.patch
+ ApplyOptionalPatch debrand-rh_taint.patch
+ ApplyOptionalPatch debrand-rh-i686-cpu.patch
++ApplyOptionalPatch LIS.patch
+ 
+ # Any further pre-build tree manipulations happen here.
+ 
+@@ -864,7 +870,7 @@
+     echo BUILDING A KERNEL FOR ${Flavour} %{_target_cpu}...
+ 
+     # make sure EXTRAVERSION says what we want it to say
+-    perl -p -i -e "s/^EXTRAVERSION.*/EXTRAVERSION = -%{release}.%{_target_cpu}${Flavour:+.${Flavour}}/" Makefile
++    perl -p -i -e "s/^EXTRAVERSION.*/EXTRAVERSION = -%{release}.%{azuretag}.%{_target_cpu}${Flavour:+.${Flavour}}/" Makefile
+ 
+     # and now to start the build process
+ 
