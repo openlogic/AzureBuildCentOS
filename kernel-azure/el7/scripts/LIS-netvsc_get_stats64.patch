@@ -1,0 +1,30 @@
+diff -Naur linux-3.10.0-862.3.3.el7.orig/drivers/net/hyperv/netvsc_drv.c linux-3.10.0-862.3.3.el7.netvsc_get_stats64/drivers/net/hyperv/netvsc_drv.c
+--- linux-3.10.0-862.3.3.el7.orig/drivers/net/hyperv/netvsc_drv.c	2018-06-23 02:10:37.900118699 +0000
++++ linux-3.10.0-862.3.3.el7.netvsc_get_stats64/drivers/net/hyperv/netvsc_drv.c	2018-06-23 02:24:52.532934914 +0000
+@@ -1147,7 +1147,7 @@
+ 	}
+ }
+ 
+-static struct rtnl_link_stats64 *netvsc_get_stats64(struct net_device *net,
++static void netvsc_get_stats64(struct net_device *net,
+ 						    struct rtnl_link_stats64 *t)
+ {
+ 	struct net_device_context *ndev_ctx = netdev_priv(net);
+@@ -1156,7 +1156,7 @@
+ 	int i;
+ 
+ 	if (!nvdev)
+-		return NULL;
++		return;
+ 
+ 	netdev_stats_to_stats64(t, &net->stats);
+ 
+@@ -1196,7 +1196,7 @@
+ 		t->multicast	+= multicast;
+ 	}
+ 
+-	return t;
++	return;
+ }
+ 
+ static int netvsc_set_mac_addr(struct net_device *ndev, void *p)

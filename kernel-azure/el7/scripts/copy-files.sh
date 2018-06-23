@@ -1,7 +1,7 @@
 #!/bin/bash
 
-[ ! -z "$1" ] || echo "Error: copy-files: kversion undefined" ; exit 1
-[ ! -z "$2" ] || echo "Error: copy-files: lisdir undefined" ; exit 1
+[ ! -z "$1" ] || { echo "Error: copy-files: kversion undefined" ; exit 1; }
+[ ! -z "$2" ] || { echo "Error: copy-files: lisdir undefined" ; exit 1; }
 
 kversion="${1}"
 lisdir="${2}"
@@ -10,12 +10,24 @@ topdir="/mnt/resource/CENTOS-KERNEL"
 lisdir="${topdir}/${lisdir}/hv-rhel7.x/hv"
 kerndir="${topdir}/linux-${kversion}.lis"
 
-# Fixup mshyperv.c headers
-sed -i 's/<asm\/hyperv\.h>/"hyperv.h"/'				${kerndir}/arch/x86/kernel/cpu/mshyperv.c
-sed -i 's/<asm\/mshyperv\.h>/"mshyperv.h"/'			${kerndir}/arch/x86/kernel/cpu/mshyperv.c
-cp ${kerndir}/arch/x86/include/asm/mshyperv.h			${kerndir}/arch/x86/kernel/cpu/mshyperv.h
-cp ${kerndir}/arch/x86/include/uapi/asm/hyperv.h		${kerndir}/arch/x86/kernel/cpu/hyperv.h
+# Fixup headers
+ # mshyperv.c
+ sed -i 's/<asm\/hyperv\.h>/"hyperv.h"/'			${kerndir}/arch/x86/kernel/cpu/mshyperv.c
+ sed -i 's/<asm\/mshyperv\.h>/"mshyperv.h"/'			${kerndir}/arch/x86/kernel/cpu/mshyperv.c
+ cp ${kerndir}/arch/x86/include/asm/mshyperv.h			${kerndir}/arch/x86/kernel/cpu/mshyperv.h
+ cp ${kerndir}/arch/x86/include/uapi/asm/hyperv.h		${kerndir}/arch/x86/kernel/cpu/hyperv.h
 
+ # hv_init.c and mmu.c
+ sed -i 's/<asm\/hyperv\.h>/"hyperv.h"/'			${kerndir}/arch/x86/hyperv/hv_init.c
+ sed -i 's/<asm\/mshyperv\.h>/"mshyperv.h"/'			${kerndir}/arch/x86/hyperv/hv_init.c
+ sed -i 's/<linux\/hyperv\.h>/"hyperv.h"/'			${kerndir}/arch/x86/hyperv/mmu.c
+ sed -i 's/<asm\/mshyperv\.h>/"mshyperv.h"/'			${kerndir}/arch/x86/hyperv/mmu.c
+ cp ${kerndir}/arch/x86/include/asm/mshyperv.h			${kerndir}/arch/x86/hyperv/mshyperv.h
+ cp ${kerndir}/arch/x86/include/uapi/asm/hyperv.h		${kerndir}/arch/x86/hyperv/hyperv.h
+
+ # vclock_gettime.c and kvm_para.h
+ sed -i 's/<asm\/mshyperv\.h>/"..\/hyperv\/mshyperv.h"/'	${kerndir}/arch/x86/vdso/vclock_gettime.c
+ sed -i 's/<asm\/hyperv\.h>/"..\/..\/..\/hyperv\/hyperv.h"/'	${kerndir}/arch/x86/include/uapi/asm/kvm_para.h
 
 # hv_vmbus
 cp ${lisdir}/channel.c						${kerndir}/drivers/hv/channel.c
@@ -44,14 +56,14 @@ cp ${lisdir}/hv_trace.h						${kerndir}/drivers/hv/hv_trace.h
  sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'		${kerndir}/drivers/hv/ms_hyperv_ext.c
  sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/'			${kerndir}/drivers/hv/ms_hyperv_ext.c
 
-sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'	${kerndir}/drivers/hv/channel_mgmt.c
-sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/'		${kerndir}/drivers/hv/connection.c
-sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'	${kerndir}/drivers/hv/connection.c
-sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/'		${kerndir}/drivers/hv/hv.c
-sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'	${kerndir}/drivers/hv/hv.c
-sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'	${kerndir}/drivers/hv/hv_util.c
-sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/' 		${kerndir}/drivers/hv/vmbus_drv.c
-sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'	${kerndir}/drivers/hv/vmbus_drv.c
+sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'		${kerndir}/drivers/hv/channel_mgmt.c
+sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/'			${kerndir}/drivers/hv/connection.c
+sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'		${kerndir}/drivers/hv/connection.c
+sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/'			${kerndir}/drivers/hv/hv.c
+sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'		${kerndir}/drivers/hv/hv.c
+sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'		${kerndir}/drivers/hv/hv_util.c
+sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/' 			${kerndir}/drivers/hv/vmbus_drv.c
+sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/'		${kerndir}/drivers/hv/vmbus_drv.c
 
 for i in ${kerndir}/drivers/hv/*; do
 	sed -ri 's/"(\.\/)?include\/linux\/hyperv\.h"/<linux\/hyperv\.h>/' $i
@@ -119,10 +131,6 @@ cp ${lisdir}/hv_trace.h						${kerndir}/drivers/uio/hv_trace.h
 #sed -i 's/"include\/linux\/hyperv\.h"/<linux\/hyperv\.h>/'
 
 
-# Unused
-#${lisdir}/hv_compat.c						${kerndir}/drivers/hv/hv_compat.c
-#mkdir ${kerndir}/arch/x86/hyperv
-
 # Headers
 cp ${lisdir}/arch/x86/include/lis/asm/mshyperv.h		${kerndir}/arch/x86/include/asm/mshyperv.h
 cp ${lisdir}/arch/x86/include/uapi/lis/asm/hyperv.h		${kerndir}/arch/x86/include/uapi/asm/hyperv.h
@@ -134,8 +142,6 @@ sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/'			${kerndir}/arch/x86/include/asm
 sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/'			${kerndir}/include/linux/hyperv.h
 
 
-# Copy fixed Makefile and Kconfig files
+# Copy any fixed Makefile and Kconfig files
 cp ./Makefile-drivers_hv					${kerndir}/drivers/hv/Makefile
-#cp ./Makefile-drivers_vmsock					${kerndir}/net/vmw_vsock/Makefile
-#cp ./Kconfig-vmsock						${kerndir}/net/vmw_vsock/Kconfig
 

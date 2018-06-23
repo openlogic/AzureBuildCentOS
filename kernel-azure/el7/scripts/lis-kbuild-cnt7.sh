@@ -12,9 +12,9 @@ cd $topdir
 echo "Building for LIS version $lis and kernel version $kversion ..."
 
 # Download the latest LIS source
-# Output example: lis-next-4.2.4
+# Output example: lis-next-4.2.5
 echo "Downloading v${lis}.tar.gz..."
-curl -sL https://github.com/LIS/lis-next/archive/v${lis}.tar.gz | tar zx
+curl -sL https://github.com/LIS/lis-next/archive/${lis}.tar.gz | tar zx
 
 # Download the latest CentOS7 kernel SRPM
 echo "Downloading kernel-${kversion}.src.rpm..."
@@ -56,28 +56,33 @@ echo "Copying LIS files to source tree..."
 # Create the patch
 echo "Creating the LIS patch, copying to SOURCES..."
 diff -Naur linux-${kversion}.orig linux-${kversion}.lis 2>/dev/null > LIS-${lis}_linux-${kbasever}.patch
-cp LIS-${lis}_linux-${kbasever}.patch ./rpmbuild/SOURCES/
+cp LIS-${lis}_linux-${kbasever}.patch ${topdir}/rpmbuild/SOURCES/
+
+# Additional patches
+cp LIS-netvsc_get_stats64.patch ${topdir}/rpmbuild/SOURCES/
 
 
-# Patch SPEC and configs
-echo "Patching spec file and configs..."
-cd ./rpmbuild/SPECS
+# Patch spec file
+echo "Patching spec file..."
+cd ${topdir}/rpmbuild/SPECS
 
-cp ./LIS-kernel-azure.spec.patch-orig ./LIS-kernel-azure.spec.patch
+cp ${topdir}/LIS-kernel-azure.spec.patch-orig ./LIS-kernel-azure.spec.patch
 sed -i "s/LIS\.patch/LIS-${lis}_linux-${kbasever}\.patch/g" ./LIS-kernel-azure.spec.patch
 
 cp kernel.spec kernel.spec.orig
 patch -p0 < ./LIS-kernel-azure.spec.patch
 
-# Uncomment when we want to modify the config
-#cd ../SOURCES
-#patch -p0 < ./LIS-kernel-3.10.0-x86_64.config.patch
-#patch -p0 < ./LIS-kernel-3.10.0-x86_64-debug.config.patch
+
+# Patch kernel build config
+echo "Patching kernel build config..."
+cd ${topdir}/rpmbuild/SOURCES
+patch -p0 < ${topdir}/kernel-3.10.0-x86_64.config.patch
+patch -p0 < ${topdir}/kernel-3.10.0-x86_64-debug.config.patch
 
 
 # Build the kernel
 echo -e "Begin building kernel...\n\n"
-cd ..
+cd $topdir/rpmbuild
 rpmbuild -ba --target=$(uname -m) ./SPECS/kernel.spec
 
 

@@ -1,47 +1,60 @@
---- kernel.spec.orig	2018-06-12 22:37:18.452032539 +0000
-+++ kernel.spec	2018-06-12 22:44:41.255814590 +0000
-@@ -7,6 +7,10 @@
+--- kernel.spec.orig	2018-06-23 04:14:02.374174961 +0000
++++ kernel.spec	2018-06-23 04:16:15.896186260 +0000
+@@ -5,7 +5,9 @@
  
- # % define buildid .local
+ %define dist .el7
  
+-# % define buildid .local
 +# This is an Azure-tuned kernel variant
 +%define variant -azure
-+%define azuretag azure
-+
++%define buildid .azure
+ 
  # For a kernel released for public testing, released_kernel should be 1.
  # For internal testing builds during development, it should be 0.
- %global released_kernel 1
-@@ -322,7 +326,7 @@
- Release: %{pkg_release}
- # DO NOT CHANGE THE 'ExclusiveArch' LINE TO TEMPORARILY EXCLUDE AN ARCHITECTURE BUILD.
- # SET %%nobuildarches (ABOVE) INSTEAD
--ExclusiveArch: noarch i686 x86_64 ppc ppc64 ppc64le s390 s390x
-+ExclusiveArch: noarch x86_64 
- ExclusiveOS: Linux
+@@ -54,6 +56,10 @@
+ # kernel-abi-whitelists
+ %define with_kernel_abi_whitelists %{?_with_kernel_abi_whitelists: 0} %{?!_with_kernel_abi_whitelists: 1}
  
- %kernel_reqprovconf
-@@ -434,6 +438,7 @@
++# kernel-azure - Do not build perf or tools packages.
++%define with_perf 0
++%define with_tools 0
++
+ # In RHEL, we always want the doc build failing to build to be a failure,
+ # which means settings this to false.
+ %define doc_build_fail false
+@@ -77,6 +83,9 @@
+ 
+ %define with_kabidw_base %{?_with_kabidw_base: 1} %{?!_with_kabidw_base: 0}
+ 
++# kernel-azure - Skip kabichk as we are modifying the kernel build config.
++%define with_kabichk 0
++
+ # should we do C=1 builds with sparse
+ %define with_sparse    %{?_with_sparse:       1} %{?!_with_sparse:       0}
+ 
+@@ -338,6 +347,7 @@
+ BuildRequires: openssl
+ BuildRequires: hmaccalc
+ BuildRequires: python-devel, newt-devel, perl(ExtUtils::Embed)
++BuildRequires: elfutils-libelf-devel
+ %ifarch x86_64
+ BuildRequires: pesign >= 0.109-4
+ %endif
+@@ -434,6 +444,8 @@
  Patch1000: debrand-single-cpu.patch
  Patch1001: debrand-rh_taint.patch
  Patch1002: debrand-rh-i686-cpu.patch
 +Patch1003: LIS.patch
++Patch1004: LIS-netvsc_get_stats64.patch
  
  BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
  
-@@ -755,6 +760,7 @@
+@@ -755,6 +767,8 @@
  ApplyOptionalPatch debrand-single-cpu.patch
  ApplyOptionalPatch debrand-rh_taint.patch
  ApplyOptionalPatch debrand-rh-i686-cpu.patch
 +ApplyOptionalPatch LIS.patch
++ApplyOptionalPatch LIS-netvsc_get_stats64.patch
  
  # Any further pre-build tree manipulations happen here.
- 
-@@ -864,7 +870,7 @@
-     echo BUILDING A KERNEL FOR ${Flavour} %{_target_cpu}...
- 
-     # make sure EXTRAVERSION says what we want it to say
--    perl -p -i -e "s/^EXTRAVERSION.*/EXTRAVERSION = -%{release}.%{_target_cpu}${Flavour:+.${Flavour}}/" Makefile
-+    perl -p -i -e "s/^EXTRAVERSION.*/EXTRAVERSION = -%{release}.%{azuretag}.%{_target_cpu}${Flavour:+.${Flavour}}/" Makefile
- 
-     # and now to start the build process
  
