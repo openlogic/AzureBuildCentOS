@@ -1,0 +1,22 @@
+# CentOS-Azure.repo
+#
+# Repo configuration for kernel and userspace packages built for Microsoft Azure,
+# provided via the CentOS Virtualization SIG repositories.
+#
+# Please see http://wiki.centos.org/SpecialInterestGroup/Virtualization
+# for more information.
+
+[centos-azure]
+name=CentOS-$releasever - Azure
+baseurl=http://mirror.centos.org/centos/$releasever/virt/$basearch/azure-common/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-Virtualization
+
+[centos-azure-testing]
+name=CentOS-$releasever - Azure - Testing
+baseurl=http://buildlogs.centos.org/centos/$releasever/virt/$basearch/azure-common/
+gpgcheck=1
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-Virtualization
+
