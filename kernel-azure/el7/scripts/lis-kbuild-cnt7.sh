@@ -16,6 +16,7 @@ echo "Building for LIS version $lis and kernel version $kversion ..."
 echo "Downloading v${lis}.tar.gz..."
 curl -sL https://github.com/LIS/lis-next/archive/${lis}.tar.gz | tar zx
 
+
 # Download the latest CentOS7 kernel SRPM
 echo "Downloading kernel-${kversion}.src.rpm..."
 curl -so ${topdir}/kernel-${kversion}.src.rpm  http://vault.centos.org/7.5.1804/updates/Source/SPackages/kernel-${kversion}.src.rpm
@@ -83,7 +84,7 @@ patch -p0 < ${topdir}/kernel-3.10.0-x86_64-debug.config.patch
 # Build the kernel
 echo -e "Begin building kernel...\n\n"
 cd $topdir/rpmbuild
-rpmbuild -ba --target=$(uname -m) ./SPECS/kernel.spec
+rpmbuild -ba ./SPECS/kernel.spec
 
 
 # Cleanup
