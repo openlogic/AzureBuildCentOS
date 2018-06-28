@@ -1,0 +1,81 @@
+--- kernel.spec.orig	2018-06-27 17:20:10.370145853 +0000
++++ kernel.spec	2018-06-27 17:41:37.141555076 +0000
+@@ -15,7 +15,10 @@
+ # that the kernel isn't the stock distribution kernel, for example,
+ # by setting the define to ".local" or ".bz123456"
+ #
+-# % define buildid .local
++
++# This is an Azure-tuned kernel variant
++%define variant -azure
++%define buildid .azure
+ 
+ %define distro_build 696.30.1
+ %define signmodules 1
+@@ -95,6 +98,14 @@
+ # kernel-abi-whitelists
+ %define with_kernel_abi_whitelists %{?_with_kernel_abi_whitelists: 0} %{?!_with_kernel_abi_whitelists: 1}
+ 
++# kernel-azure - We only need kernel, devel, headers and debug packages.
++%define with_perf 0
++%define with_tools 0
++%define with_kernel_abi_whitelists 0
++%define with_doc 0
++%define with_firmware 0
++%define _without_firmware 1
++
+ # Build the kernel-doc package, but don't fail the build if it botches.
+ # Here "true" means "continue" and "false" means "fail the build".
+ %if 0%{?released_kernel}
+@@ -108,6 +119,9 @@
+ # Control whether we perform a compat. check against published ABI.
+ %define with_fips      %{?_without_fips:      0} %{?!_without_fips:      1}
+ 
++# kernel-azure - Skip kabichk as we are modifying the kernel build config.
++%define with_kabichk 0
++
+ # Additional options for user-friendly one-off kernel building:
+ #
+ # Only build the base kernel (--with baseonly):
+@@ -135,6 +149,7 @@
+ %define stable_rctag .rc%{stable_rc}
+ %endif
+ %define pkg_release %{distro_build}%{?stable_rctag}%{?dist}%{?buildid}
++%define base_release %{distro_build}%{?stable_rctag}%{?dist}
+ 
+ %else
+ 
+@@ -437,7 +452,7 @@
+ # Packages that need to be installed before the kernel is, because the %post
+ # scripts use them.
+ #
+-%define kernel_prereq  fileutils, module-init-tools, initscripts >= 8.11.1-1, kernel-firmware >= %{rpmversion}-%{pkg_release}, grubby >= 7.0.4-1
++%define kernel_prereq  fileutils, module-init-tools, initscripts >= 8.11.1-1, kernel-firmware >= %{rpmversion}-%{base_release}, grubby >= 7.0.4-1
+ %if %{with_dracut}
+ %define initrd_prereq  dracut-kernel >= 004-408.el6
+ %else
+@@ -481,7 +496,7 @@
+ Release: %{pkg_release}
+ # DO NOT CHANGE THE 'ExclusiveArch' LINE TO TEMPORARILY EXCLUDE AN ARCHITECTURE BUILD.
+ # SET %%nobuildarches (ABOVE) INSTEAD
+-ExclusiveArch: noarch %{all_x86} x86_64 ppc ppc64 ia64 sparc sparc64 s390 s390x alpha alphaev56 %{arm}
++ExclusiveArch: noarch x86_64
+ ExclusiveOS: Linux
+ 
+ %kernel_reqprovconf
+@@ -616,6 +631,7 @@
+ 
+ # empty final patch file to facilitate testing of kernel patches
+ Patch999999: linux-kernel-test.patch
++Patch1000: LIS.patch
+ 
+ BuildRoot: %{_tmppath}/kernel-%{KVERREL}-root
+ 
+@@ -936,6 +952,7 @@
+ make -f %{SOURCE20} VERSION=%{version} configs
+ 
+ ApplyOptionalPatch linux-kernel-test.patch
++ApplyOptionalPatch LIS.patch
+ 
+ # Any further pre-build tree manipulations happen here.
+ 
