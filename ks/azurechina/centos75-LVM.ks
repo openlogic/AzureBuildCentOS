@@ -177,6 +177,9 @@ systemctl disable abrtd
 echo "http_caching=packages" >> /etc/yum.conf
 yum clean all
 
+# Set tuned profile
+echo "virtual-guest" > /etc/tuned/active_profile
+
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
 rm -f /etc/resolv.conf 2>/dev/null # workaround old agent bug
