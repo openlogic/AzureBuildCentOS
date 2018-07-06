@@ -192,6 +192,14 @@ cd /usr/share/selinux/devel
 make -f /usr/share/selinux/devel/Makefile hyperv-daemons.pp
 semodule -s targeted -i hyperv-daemons.pp
 
+# Modify yum, sync history, clean cache
+echo "http_caching=packages" >> /etc/yum.conf
+yum history sync
+yum clean all
+
+# Set tuned profile
+echo "virtual-guest" > /etc/tuned/active_profile
+
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
 

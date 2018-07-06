@@ -180,6 +180,11 @@ tar -C /tmp -zxf /tmp/${MPI}.tgz
 /tmp/${MPI}/install.sh --silent /tmp/${CFG}
 rm -rf /tmp/${MPI}* /tmp/${CFG}
 
+# Modify yum, sync history, clean cache
+echo "http_caching=packages" >> /etc/yum.conf
+yum history sync
+yum clean all
+
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
 
