@@ -1,4 +1,4 @@
-# Kickstart for provisioning a CentOS 7.5 Azure VM with LVM in Mooncake
+# Kickstart for provisioning a CentOS 7.5 Azure VM with LVM for Azure China
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -93,8 +93,8 @@ hypervkvpd
 usermod root -p '!!'
 
 # Set OL repos
-curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/mooncake/CentOS-Base-7.repo
-curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/mooncake/OpenLogic.repo
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azurechina/CentOS-Base-7.repo
+curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azurechina/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
