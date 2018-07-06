@@ -104,9 +104,6 @@ curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/sz
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 
-# Modify yum
-echo "http_caching=packages" >> /etc/yum.conf
-
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
 
@@ -137,11 +134,9 @@ rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-p
 # Disable some unneeded services by default (administrators can re-enable if desired)
 chkconfig cups off
 
-# TEMPORARY - Install the Azure Linux agent
-#curl -so /root/WALinuxAgent-2.1.3-1.noarch.rpm https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/rpm/6/WALinuxAgent-2.1.3-1.noarch.rpm
-#rpm -i /root/WALinuxAgent-2.1.3-1.noarch.rpm
-#rm -f /root/WALinuxAgent-2.1.3-1.noarch.rpm
-#chkconfig waagent on
+# Modify yum
+echo "http_caching=packages" >> /etc/yum.conf
+yum clean all
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision

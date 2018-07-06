@@ -94,9 +94,6 @@ curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/sz
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 
-# Modify yum
-echo "http_caching=packages" >> /etc/yum.conf
-
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0"/g' /etc/default/grub
 
@@ -176,6 +173,10 @@ EOF
 
 # Disable some unneeded services by default (administrators can re-enable if desired)
 systemctl disable abrtd
+
+# Modify yum
+echo "http_caching=packages" >> /etc/yum.conf
+yum clean all
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
