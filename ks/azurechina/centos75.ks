@@ -160,7 +160,7 @@ session     required      pam_unix.so
 EOF
 
 # Disable persistent net rules
-ln -s /etc/udev/rules.d/75-persistent-net-generator.rules
+ln -s /dev/null /etc/udev/rules.d/75-persistent-net-generator.rules
 rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules 2>/dev/null
 
 # Disable NetworkManager handling of the SRIOV interfaces
