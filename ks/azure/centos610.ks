@@ -20,7 +20,7 @@ network --bootproto=dhcp
 
 # Use network installation
 url --url=http://olcentgbl.trafficmanager.net/centos/6.10/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/6.9/updates/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/6.10/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
