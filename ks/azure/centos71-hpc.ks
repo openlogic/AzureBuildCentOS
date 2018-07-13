@@ -80,6 +80,8 @@ dapl
 libibverbs
 kernel-headers
 kernel-devel
+libstdc++.i686
+redhat-lsb
 -hypervkvpd
 -dracut-config-rescue
 
