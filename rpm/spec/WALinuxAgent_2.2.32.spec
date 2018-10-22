@@ -9,7 +9,7 @@
 %define name WALinuxAgent
 %define version 2.2.32
 %define unmangled_version 2.2.32
-%define unmangled_version 2.2.33
+%define unmangled_version 2.2.32
 %define release 1
 
 %if 0%{?rhel} < 7
