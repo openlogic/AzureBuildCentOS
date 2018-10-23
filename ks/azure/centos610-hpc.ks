@@ -84,6 +84,7 @@ kernel-devel
 libstdc++.i686
 redhat-lsb
 -hypervkvpd
+-hyperv-daemons
 -dracut-config-rescue
 
 %end
@@ -147,7 +148,7 @@ chkconfig cups off
 
   ## Install LIS4.1 with RDMA drivers
   ND="144"
-  cd /opt/microsoft/rdma/rhel68
+  cd /opt/microsoft/rdma/rhel610
   rpm -i --nopre microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm \
                  kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
   rm -f /initramfs-2.6.32-642.el6.x86_64.img 2>/dev/null

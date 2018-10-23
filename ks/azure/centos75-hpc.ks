@@ -84,6 +84,7 @@ kernel-devel
 libstdc++.i686
 redhat-lsb
 -hypervkvpd
+-hyperv-daemons
 -dracut-config-rescue
 
 %end
@@ -162,7 +163,7 @@ systemctl disable abrtd
 
   ## Install LIS4.1 with RDMA drivers
   ND="144"
-  cd /opt/microsoft/rdma/rhel74
+  cd /opt/microsoft/rdma/rhel75
   rpm -i --nopre microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm \
                  kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
   rm -f /initramfs-3.10.0-693.el7.x86_64.img 2> /dev/null
