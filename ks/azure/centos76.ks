@@ -1,4 +1,4 @@
-# Kickstart for provisioning a CentOS 7.5 Azure VM
+# Kickstart for provisioning a CentOS 7.6 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
