@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # CentOS6
-## Note: Does not yet include vmsock and pci-hyperv
+## Note: Does not yet include vmsock
 
 [ ! -z "$1" ] || { echo "Error: copy-files: kversion undefined" ; exit 1; }
 [ ! -z "$2" ] || { echo "Error: copy-files: lisdir undefined" ; exit 1; }
@@ -25,6 +25,7 @@ cp ${lisdir}/channel.c						${kerndir}/drivers/hv/channel.c
 cp ${lisdir}/channel_mgmt.c					${kerndir}/drivers/hv/channel_mgmt.c
 cp ${lisdir}/connection.c					${kerndir}/drivers/hv/connection.c
 cp ${lisdir}/hv_balloon.c					${kerndir}/drivers/hv/hv_balloon.c
+#cp ${lisdir}/hv_trace_balloon.h					${kerndir}/drivers/hv/hv_trace_balloon.h
 cp ${lisdir}/hv.c						${kerndir}/drivers/hv/hv.c
 cp ${lisdir}/hv_fcopy.c						${kerndir}/drivers/hv/hv_fcopy.c
 cp ${lisdir}/hv_kvp.c						${kerndir}/drivers/hv/hv_kvp.c
@@ -61,6 +62,9 @@ for i in ${kerndir}/drivers/hv/*; do
 	sed -i 's/"include\/uapi\/linux\/hyperv.h"/<uapi\/linux\/hyperv.h>/' $i
 done
 
+# Fix drivers/hv/hv_trace_balloon.h
+#sed -i 's/#define TRACE_INCLUDE_PATH \./#define TRACE_INCLUDE_PATH \.\.\/\.\.\/drivers\/hv\//'	${kerndir}/drivers/hv/hv_trace_balloon.h
+
 
 # hv_netvsc
 cp ${lisdir}/hyperv_net.h					${kerndir}/drivers/net/hyperv/hyperv_net.h
@@ -78,6 +82,13 @@ done
 # hv_storvsc
 cp ${lisdir}/storvsc_drv.c					${kerndir}/drivers/scsi/storvsc_drv.c
 sed -i 's/"include\/linux\/hyperv\.h"/<linux\/hyperv\.h>/'	${kerndir}/drivers/scsi/storvsc_drv.c
+
+
+# pci-hyperv
+#cp ${lisdir}/pci-hyperv.c					${kerndir}/drivers/pci/pci-hyperv.c
+#sed -i 's/"include\/linux\/hyperv\.h"/<linux\/hyperv\.h>/'	${kerndir}/drivers/pci/pci-hyperv.c
+#sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/'			${kerndir}/drivers/pci/pci-hyperv.c
+#sed -i 's/hyperv_vmbus\.h/\.\.\/hv\/hyperv_vmbus\.h/'		${kerndir}/drivers/pci/pci-hyperv.c
 
 
 # Hyper-V HID
@@ -129,5 +140,18 @@ sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/'			${kerndir}/include/linux/hyperv
 
 
 # Copy fixed Makefile and Kconfig files
-cp ./Makefile-drivers_hv					${kerndir}/drivers/hv/Makefile
+cp ./patches/Makefile-drivers_hv				${kerndir}/drivers/hv/Makefile
+
+#echo							>>	${kerndir}/drivers/pci/Makefile
+#echo 'obj-$(CONFIG_PCI_HYPERV) += pci-hyperv.o' 	>>	${kerndir}/drivers/pci/Makefile
+#cat <<EOF						>>	${kerndir}/drivers/pci/Kconfig
+#
+#config PCI_HYPERV
+#        tristate "Hyper-V PCI Frontend"
+#        depends on PCI && X86 && HYPERV && PCI_MSI && X86_64
+#        help
+#          The PCI device frontend driver allows the kernel to import arbitrary
+#          PCI devices from a PCI backend to support PCI driver domains.
+#
+#EOF
 
