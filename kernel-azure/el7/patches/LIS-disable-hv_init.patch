@@ -1,0 +1,78 @@
+diff -Naur ./linux-3.10.0-957.el7.orig/drivers/hv/hv.c linux-3.10.0-957.el7/drivers/hv/hv.c
+--- ./linux-3.10.0-957.el7.orig/drivers/hv/hv.c	2018-12-12 00:41:58.075488739 +0000
++++ linux-3.10.0-957.el7/drivers/hv/hv.c	2018-12-12 00:44:04.402685700 +0000
+@@ -49,30 +49,30 @@
+  *
+  * This routine must be called before any other routines in here are called
+  */
+-int hv_init(void)
+-{
+-	/*
+-	 * This initialization is normally done at
+-	 * early boot time in the upstream kernel.
+-	 *
+-	 * Since we can't change the kernel bootup behavior,
+-	 * we do this at module load time.
+-	 */
+-	hyperv_init();
+-
+-	memset(hv_context.clk_evt, 0, sizeof(void *) * NR_CPUS);
+-
+-	hv_print_host_info();
+-
+-	if (!hv_is_hypercall_page_setup())
+-		return -ENOTSUPP;
+-
+-	hv_context.cpu_context = alloc_percpu(struct hv_per_cpu_context);
+-	if (!hv_context.cpu_context)
+-		return -ENOMEM;
+-
+-	return 0;
+-}
++//int hv_init(void)
++//{
++//	/*
++//	 * This initialization is normally done at
++//	 * early boot time in the upstream kernel.
++//	 *
++//	 * Since we can't change the kernel bootup behavior,
++//	 * we do this at module load time.
++//	 */
++//	hyperv_init();
++//
++//	memset(hv_context.clk_evt, 0, sizeof(void *) * NR_CPUS);
++//
++//	hv_print_host_info();
++//
++//	if (!hv_is_hypercall_page_setup())
++//		return -ENOTSUPP;
++//
++//	hv_context.cpu_context = alloc_percpu(struct hv_per_cpu_context);
++//	if (!hv_context.cpu_context)
++//		return -ENOMEM;
++//
++//	return 0;
++//}
+ 
+ /*
+  * hv_post_message - Post a message using the hypervisor message IPC.
+diff -Naur ./linux-3.10.0-957.el7.orig/drivers/hv/vmbus_drv.c linux-3.10.0-957.el7/drivers/hv/vmbus_drv.c
+--- ./linux-3.10.0-957.el7.orig/drivers/hv/vmbus_drv.c	2018-12-12 00:41:37.908616985 +0000
++++ linux-3.10.0-957.el7/drivers/hv/vmbus_drv.c	2018-12-12 00:44:14.891619030 +0000
+@@ -1066,11 +1066,11 @@
+ 
+ 
+ 	/* Hypervisor initialization...setup hypercall page..etc */
+-	ret = hv_init();
+-	if (ret != 0) {
+-		pr_err("Unable to initialize the hypervisor - 0x%x\n", ret);
+-		return ret;
+-	}
++//	ret = hv_init();
++//	if (ret != 0) {
++//		pr_err("Unable to initialize the hypervisor - 0x%x\n", ret);
++//		return ret;
++//	}
+ 
+ 	ret = bus_register(&hv_bus);
+ 	if (ret)

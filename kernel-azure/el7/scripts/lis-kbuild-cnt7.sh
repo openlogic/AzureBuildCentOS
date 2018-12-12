@@ -1,8 +1,9 @@
 #!/bin/bash
 
-lis="4.2.5"
-kversion=$( curl -s "http://vault.centos.org/7.5.1804/updates/Source/SPackages/" | \
-	    grep "kernel-3.10.0-862" | \
+lis="4.2.7"
+krepo="7.6.1810/os"
+kversion=$( curl -s "http://vault.centos.org/${krepo}/Source/SPackages/" | \
+	    grep "kernel-3.10.0-957" | \
 	    sed 's/.*<a href="//' | sed 's/">.*//' | sort -V | tail -1 | sed 's/\.src\.rpm//' | sed 's/kernel-//' )
 kbasever=$( echo -n $kversion | sed -r 's/\.[0-9]*\.[0-9]*\.el[6-8]//' )
 
@@ -19,7 +20,7 @@ curl -sL https://github.com/LIS/lis-next/archive/${lis}.tar.gz | tar zx
 
 # Download the latest CentOS7 kernel SRPM
 echo "Downloading kernel-${kversion}.src.rpm..."
-curl -so ${topdir}/kernel-${kversion}.src.rpm  http://vault.centos.org/7.5.1804/updates/Source/SPackages/kernel-${kversion}.src.rpm
+curl -so ${topdir}/kernel-${kversion}.src.rpm  http://vault.centos.org/${krepo}/Source/SPackages/kernel-${kversion}.src.rpm
 echo "Checking GPG signature for kernel-${kversion}.src.rpm..."
 rpm -K kernel-${kversion}.src.rpm
 if [ "$?" -ne "0" ]; then
@@ -56,18 +57,20 @@ echo "Copying LIS files to source tree..."
 
 # Create the patch
 echo "Creating the LIS patch, copying to SOURCES..."
-diff -Naur linux-${kversion}.orig linux-${kversion}.lis 2>/dev/null > LIS-${lis}_linux-${kbasever}.patch
-cp LIS-${lis}_linux-${kbasever}.patch ${topdir}/rpmbuild/SOURCES/
+diff -Naur linux-${kversion}.orig linux-${kversion}.lis 2>/dev/null > patches/LIS-${lis}_linux-${kbasever}.patch
+cp patches/LIS-${lis}_linux-${kbasever}.patch ${topdir}/rpmbuild/SOURCES/
 
-# Additional patches
-cp LIS-netvsc_get_stats64.patch ${topdir}/rpmbuild/SOURCES/
+
+# Copy Additional Patches
+cp patches/LIS-netvsc_get_stats64.patch ${topdir}/rpmbuild/SOURCES/
+cp patches/LIS-disable-hv_init.patch ${topdir}/rpmbuild/SOURCES/
 
 
 # Patch spec file
 echo "Patching spec file..."
 cd ${topdir}/rpmbuild/SPECS
 
-cp ${topdir}/LIS-kernel-azure.spec.patch-orig ./LIS-kernel-azure.spec.patch
+cp ${topdir}/patches/LIS-kernel-azure.spec.patch-orig ./LIS-kernel-azure.spec.patch
 sed -i "s/LIS\.patch/LIS-${lis}_linux-${kbasever}\.patch/g" ./LIS-kernel-azure.spec.patch
 
 cp kernel.spec kernel.spec.orig
@@ -77,8 +80,8 @@ patch -p0 < ./LIS-kernel-azure.spec.patch
 # Patch kernel build config
 echo "Patching kernel build config..."
 cd ${topdir}/rpmbuild/SOURCES
-patch -p0 < ${topdir}/kernel-3.10.0-x86_64.config.patch
-patch -p0 < ${topdir}/kernel-3.10.0-x86_64-debug.config.patch
+patch -p0 < ${topdir}/patches/kernel-3.10.0-x86_64.config.patch
+patch -p0 < ${topdir}/patches/kernel-3.10.0-x86_64-debug.config.patch
 
 
 # Build the kernel

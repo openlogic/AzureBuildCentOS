@@ -1,8 +1,8 @@
---- kernel.spec.orig	2018-06-26 21:36:24.893994522 +0000
-+++ kernel.spec	2018-06-27 23:37:28.277212331 +0000
-@@ -5,7 +5,9 @@
+--- ./kernel.spec.orig	2018-12-12 00:40:10.028175840 +0000
++++ ./kernel.spec	2018-12-12 00:47:30.821373646 +0000
+@@ -3,7 +3,9 @@
  
- %define dist .el7
+ Summary: The Linux kernel
  
 -# % define buildid .local
 +# This is an Azure-tuned kernel variant
@@ -34,38 +34,41 @@
  # should we do C=1 builds with sparse
  %define with_sparse    %{?_with_sparse:       1} %{?!_with_sparse:       0}
  
-@@ -322,7 +333,7 @@
+@@ -330,7 +341,8 @@
  Release: %{pkg_release}
  # DO NOT CHANGE THE 'ExclusiveArch' LINE TO TEMPORARILY EXCLUDE AN ARCHITECTURE BUILD.
  # SET %%nobuildarches (ABOVE) INSTEAD
 -ExclusiveArch: noarch i686 x86_64 ppc ppc64 ppc64le s390 s390x
++#ExclusiveArch: noarch i686 x86_64 ppc ppc64 ppc64le s390 s390x
 +ExclusiveArch: noarch x86_64
  ExclusiveOS: Linux
  
  %kernel_reqprovconf
-@@ -338,6 +349,7 @@
+@@ -346,6 +358,7 @@
  BuildRequires: openssl
  BuildRequires: hmaccalc
  BuildRequires: python-devel, newt-devel, perl(ExtUtils::Embed)
 +BuildRequires: elfutils-libelf-devel
  %ifarch x86_64
  BuildRequires: pesign >= 0.109-4
- %endif
-@@ -434,6 +446,8 @@
+ BuildRequires: elfutils-libelf-devel
+@@ -447,6 +460,9 @@
  Patch1000: debrand-single-cpu.patch
  Patch1001: debrand-rh_taint.patch
  Patch1002: debrand-rh-i686-cpu.patch
-+Patch1003: LIS.patch
++Patch1003: LIS-4.2.7_linux-3.10.0-957.el7.patch
 +Patch1004: LIS-netvsc_get_stats64.patch
++Patch1005: LIS-disable-hv_init.patch
  
  BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
  
-@@ -755,6 +769,8 @@
+@@ -779,6 +795,9 @@
  ApplyOptionalPatch debrand-single-cpu.patch
  ApplyOptionalPatch debrand-rh_taint.patch
  ApplyOptionalPatch debrand-rh-i686-cpu.patch
-+ApplyOptionalPatch LIS.patch
++ApplyOptionalPatch LIS-4.2.7_linux-3.10.0-957.el7.patch
 +ApplyOptionalPatch LIS-netvsc_get_stats64.patch
++ApplyOptionalPatch LIS-disable-hv_init.patch
  
  # Any further pre-build tree manipulations happen here.
  
