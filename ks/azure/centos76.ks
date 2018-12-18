@@ -19,8 +19,11 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://olcentgbl.trafficmanager.net/centos/7.6.1810/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.6.1810/updates/x86_64/
+url --url="http://olcentgbl.trafficmanager.net/centos/7.6.1810/os/x86_64/"
+repo --name "os" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.6.1810/os/x86_64/" --cost=100
+repo --name="updates" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.6.1810/updates/x86_64/" --cost=100
+repo --name "extras" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.6.1810/extras/x86_64/" --cost=100
+repo --name="openlogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/"
 
 # Root password
 rootpw --plaintext "to_be_disabled"
@@ -43,9 +46,6 @@ part / --fstype="xfs" --size=1 --grow --asprimary
 
 # System bootloader configuration
 bootloader --location=mbr --timeout=1
-
-# Add OpenLogic repo
-repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/
 
 # Firewall configuration
 firewall --disabled
@@ -131,6 +131,13 @@ NETWORKING=yes
 HOSTNAME=localhost.localdomain
 EOF
 
+# Change dhcp client retry/timeouts to resolve CentOS bug #6866
+cat  >> /etc/dhcp/dhclient.conf << EOF
+
+timeout 300;
+retry 60;
+EOF
+
 # Deploy new configuration
 cat <<EOF > /etc/pam.d/system-auth-ac
 
@@ -160,6 +167,8 @@ EOF
 # Disable persistent net rules
 ln -s /dev/null /etc/udev/rules.d/75-persistent-net-generator.rules
 rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules 2>/dev/null
+rm -f /etc/udev/rules.d/70* 2>/dev/null
+ln -s /dev/null /etc/udev/rules.d/80-net-name-slot.rules
 
 # Disable NetworkManager handling of the SRIOV interfaces
 cat <<EOF > /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules
