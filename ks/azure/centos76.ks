@@ -131,13 +131,6 @@ NETWORKING=yes
 HOSTNAME=localhost.localdomain
 EOF
 
-# Change dhcp client retry/timeouts to resolve CentOS bug #6866
-cat  >> /etc/dhcp/dhclient.conf << EOF
-
-timeout 300;
-retry 60;
-EOF
-
 # Deploy new configuration
 cat <<EOF > /etc/pam.d/system-auth-ac
 
