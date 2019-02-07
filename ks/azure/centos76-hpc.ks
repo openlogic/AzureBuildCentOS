@@ -1,4 +1,4 @@
-# Kickstart for provisioning a CentOS 7.6 Azure HPC (SR-IOV) VM
+# Kickstart for provisioning a CentOS 7.6 Azure HPC VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -72,14 +72,20 @@ cifs-utils
 sudo
 python-pyasn1
 parted
-hypervkvpd
-azure-repo-svc
--dracut-config-rescue
+msft-rdma-drivers
 selinux-policy-devel
+rdma
+librdmacm
+libmlx4
+dapl
+libibverbs
 kernel-headers
 kernel-devel
 libstdc++.i686
 redhat-lsb
+-hypervkvpd
+-hyperv-daemons
+-dracut-config-rescue
 nfs-utils
 numactl
 numactl-devel
@@ -201,6 +207,67 @@ systemctl disable wpa_supplicant
 systemctl disable abrtd
 systemctl disable firewalld
 
+# Install WALinuxAgent
+mkdir -p /tmp/wala
+cd /tmp/wala
+wget https://github.com/Azure/WALinuxAgent/archive/v2.2.36.tar.gz
+tar -xvf v2.2.36.tar.gz
+cd WALinuxAgent-2.2.36
+python setup.py install --register-service --force
+sed -i -e 's/# OS.EnableRDMA=y/OS.EnableRDMA=y/g' /etc/waagent.conf
+sed -i -e 's/AutoUpdate.Enabled=y/# AutoUpdate.Enabled=y/g' /etc/waagent.conf
+systemctl restart waagent
+cd && rm -rf /tmp/wala
+
+# Enable RDMA driver
+
+  ## Install LIS4.1 with RDMA drivers
+  ND="144"
+  cd /opt/microsoft/rdma/rhel75
+  rpm -i --nopre microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm \
+                 kmod-microsoft-hyper-v-rdma-*.${ND}-*.x86_64.rpm
+  rm -f /initramfs-3.10.0-693.el7.x86_64.img 2> /dev/null
+  rm -f /boot/initramfs-3.10.0-693.el7.x86_64.img 2> /dev/null
+  echo -e "\nexclude=kernel*\n" >> /etc/yum.conf
+
+  ## WALinuxAgent 2.2.x
+  sed -i 's/^\#\s*OS.EnableRDMA=.*/OS.EnableRDMA=y/' /etc/waagent.conf
+  systemctl enable hv_kvp_daemon.service
+
+# NetworkManager should ignore RDMA interface
+cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth1
+DEVICE=eth1
+ONBOOT=no
+NM_CONTROLLED=no
+EOF
+
+# Install Intel MPI
+MPI="l_mpi-rt_p_5.1.3.223"
+CFG="IntelMPI-v5.x-silent.cfg"
+##curl -so /tmp/${MPI}.tgz http://192.168.40.171/azure/${MPI}.tgz  ## Internal link to MPI package
+curl -so /tmp/${MPI}.tgz http://olcentwus.cloudapp.net/openlogic/${MPI}.tgz  ## Link to MPI package
+curl -so /tmp/${CFG} https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
+tar -C /tmp -zxf /tmp/${MPI}.tgz
+/tmp/${MPI}/install.sh --silent /tmp/${CFG}
+rm -rf /tmp/${MPI}* /tmp/${CFG}
+
+# Fix SELinux for Hyper-V daemons
+cat << EOF > /usr/share/selinux/devel/hyperv-daemons.te
+module hyperv-daemons 1.0;
+require {
+type hypervkvp_t;
+type device_t;
+type hypervvssd_t;
+class chr_file { read write open };
+}
+allow hypervkvp_t device_t:chr_file { read write open };
+allow hypervvssd_t device_t:chr_file { read write open };
+EOF
+cd /usr/share/selinux/devel
+make -f /usr/share/selinux/devel/Makefile hyperv-daemons.pp
+semodule -s targeted -i hyperv-daemons.pp
+
+
 # Update memory limits
 cat << EOF >> /etc/security/limits.conf
 *               hard    memlock         unlimited
@@ -228,19 +295,6 @@ KERNEL=$(uname -r)
 sed -i 's/LOAD_EIPOIB=no/LOAD_EIPOIB=yes/g' /etc/infiniband/openib.conf
 /etc/init.d/openibd restart
 cd && rm -rf /tmp/mlnxofed
-
-# Install WALinuxAgent
-mkdir -p /tmp/wala
-cd /tmp/wala
-wget https://github.com/Azure/WALinuxAgent/archive/v2.2.36.tar.gz
-tar -xvf v2.2.36.tar.gz
-cd WALinuxAgent-2.2.36
-python setup.py install --register-service --force
-sed -i -e 's/# OS.EnableRDMA=y/OS.EnableRDMA=y/g' /etc/waagent.conf
-sed -i -e 's/AutoUpdate.Enabled=y/# AutoUpdate.Enabled=y/g' /etc/waagent.conf
-systemctl restart waagent
-cd && rm -rf /tmp/wala
-
 
 # Install gcc 8.2
 mkdir -p /tmp/setup-gcc
