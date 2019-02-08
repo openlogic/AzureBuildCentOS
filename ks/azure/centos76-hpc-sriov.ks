@@ -312,6 +312,16 @@ tar -xvf mpich-3.3.tar.gz
 cd mpich-3.3
 ./configure --prefix=${INSTALL_PREFIX}/mpich-3.3 --with-ucx=${INSTALL_PREFIX}/ucx-1.5.0 --with-hcoll=${HCOLL_PATH} --enable-g=none --enable-fast=yes --with-device=ch4:ucx   && make -j 8 && make install 
 cd ..
+
+# Intel MPI 2019 (update 2)
+CFG="IntelMPI-v2019.x-silent.cfg"
+wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/15040/l_mpi_2019.2.187.tgz
+wget https://raw.githubusercontent.com/jithinjosepkl/azhpc-images/master/config/${CFG}
+tar -xvf l_mpi_2019.2.187.tgz
+cd l_mpi_2019.2.187
+./install.sh --silent /tmp/mpi/${CFG}
+cd ..
+
 cd && rm -rf /tmp/mpi
 
 # Setup module files for MPIs
