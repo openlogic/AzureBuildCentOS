@@ -66,7 +66,7 @@ poweroff
 %packages
 @base
 @console-internet
-@development-tools
+@development
 ntp
 cifs-utils
 sudo
