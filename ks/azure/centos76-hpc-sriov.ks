@@ -66,7 +66,7 @@ poweroff
 %packages
 @base
 @console-internet
-@development-tools
+@development
 ntp
 cifs-utils
 sudo
@@ -270,6 +270,22 @@ tar -xvf gcc-8.2.0.tar.gz
 cd gcc-8.2.0
 ./configure --disable-multilib && make -j 40 && make install
 cd && rm -rf /tmp/setup-gcc
+
+cat << EOF >> /usr/share/Modules/modulefiles/gcc-8.2.0
+#%Module 1.0
+#
+#  GCC 8.2.0
+#
+
+prepend-path    PATH            /usr/local/bin
+prepend-path    LD_LIBRARY_PATH /usr/local/lib64
+setenv          CC              /usr/local/bin/gcc
+setenv          GCC             /usr/local/bin/gcc
+setenv          FC              /usr/local/bin/gfortran
+setenv          F77             /usr/local/bin/gfortran
+setenv          F90             /usr/local/bin/gfortran
+EOF
+module load gcc-8.2.0
 
 # Install MPIs
 INSTALL_PREFIX=/opt
