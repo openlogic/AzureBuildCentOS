@@ -79,7 +79,6 @@ selinux-policy-devel
 kernel-headers
 kernel-devel
 libstdc++.i686
-redhat-lsb
 nfs-utils
 numactl
 numactl-devel
