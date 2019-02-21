@@ -88,14 +88,11 @@ byacc
 environment-modules
 python-devel
 python-setuptools
-redhat-rpm-config
-rpm-build
 gtk2
 atk
 cairo
 tcl
 tk
-createrepo
 m4
 libgcc.i686
 glibc-devel.i686
@@ -281,10 +278,10 @@ prepend-path    PATH            /usr/local/bin
 prepend-path    LD_LIBRARY_PATH /usr/local/lib64
 setenv          CC              /usr/local/bin/gcc
 setenv          GCC             /usr/local/bin/gcc
-setenv          FC              /usr/local/bin/gfortran
-setenv          F77             /usr/local/bin/gfortran
-setenv          F90             /usr/local/bin/gfortran
 EOF
+
+# Load gcc-8.2.0
+source ~/.bashrc
 module load gcc-8.2.0
 
 # Install MPIs
@@ -332,7 +329,7 @@ cd ..
 # Intel MPI 2019 (update 2)
 CFG="IntelMPI-v2019.x-silent.cfg"
 wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/15040/l_mpi_2019.2.187.tgz
-wget https://raw.githubusercontent.com/jithinjosepkl/azhpc-images/master/config/${CFG}
+wget https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
 tar -xvf l_mpi_2019.2.187.tgz
 cd l_mpi_2019.2.187
 ./install.sh --silent /tmp/mpi/${CFG}
