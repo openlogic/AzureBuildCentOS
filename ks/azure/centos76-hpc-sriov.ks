@@ -77,8 +77,6 @@ azure-repo-svc
 -dracut-config-rescue
 selinux-policy-devel
 kernel-headers
-kernel-devel
-libstdc++.i686
 nfs-utils
 numactl
 numactl-devel
@@ -93,8 +91,8 @@ cairo
 tcl
 tk
 m4
-libgcc.i686
-glibc-devel.i686
+glibc-devel
+glibc-static
 %end
 
 %post --log=/var/log/anaconda/post-install.log
@@ -219,6 +217,7 @@ wget http://www.mellanox.com/downloads/ofed/MLNX_OFED-4.5-1.0.1.0/MLNX_OFED_LINU
 tar zxvf MLNX_OFED_LINUX-4.5-1.0.1.0-rhel7.6-x86_64.tgz
 
 KERNEL=$(uname -r)
+yum install -y kernel-devel-${KERNEL}
 ./MLNX_OFED_LINUX-4.5-1.0.1.0-rhel7.6-x86_64/mlnxofedinstall --kernel-sources /usr/src/kernels/$KERNEL --add-kernel-support --skip-repo
 
 sed -i 's/LOAD_EIPOIB=no/LOAD_EIPOIB=yes/g' /etc/infiniband/openib.conf
@@ -245,27 +244,28 @@ cd /tmp/setup-gcc
 wget ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2
 tar -xvf gmp-6.1.0.tar.bz2
 cd ./gmp-6.1.0
-./configure && make -j 40 && make install
+./configure && make -j 8 && make install
 cd ..
 
 wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2
 tar -xvf mpfr-3.1.4.tar.bz2
 cd mpfr-3.1.4
-./configure && make -j 40 && make install
+./configure && make -j 8 && make install
 cd ..
 
 wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz
 tar -xvf mpc-1.0.3.tar.gz
 cd mpc-1.0.3
-./configure && make -j 40 && make install
+./configure && make -j 8 && make install
 cd ..
 
 # install gcc 8.2
 wget https://ftp.gnu.org/gnu/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz
 tar -xvf gcc-8.2.0.tar.gz
 cd gcc-8.2.0
-./configure --disable-multilib && make -j 40 && make install
+./configure --disable-multilib --prefix=/opt/gcc-8.2.0 && make -j 8 && make install
 cd && rm -rf /tmp/setup-gcc
+
 
 cat << EOF >> /usr/share/Modules/modulefiles/gcc-8.2.0
 #%Module 1.0
@@ -273,15 +273,17 @@ cat << EOF >> /usr/share/Modules/modulefiles/gcc-8.2.0
 #  GCC 8.2.0
 #
 
-prepend-path    PATH            /usr/local/bin
-prepend-path    LD_LIBRARY_PATH /usr/local/lib64
-setenv          CC              /usr/local/bin/gcc
-setenv          GCC             /usr/local/bin/gcc
+prepend-path    PATH            /opt/gcc-8.2.0/bin
+prepend-path    LD_LIBRARY_PATH /opt/gcc-8.2.0/lib64
+setenv          CC              /opt/gcc-8.2.0/bin/gcc
+setenv          GCC             /opt/gcc-8.2.0/bin/gcc
 EOF
 
 # Load gcc-8.2.0
-source ~/.bashrc
-module load gcc-8.2.0
+export PATH=/opt/gcc-8.2.0/bin:$PATH
+export LD_LIBRARY_PATH=/opt/gcc-8.2.0/lib64:$LD_LIBRARY_PATH
+set CC=/opt/gcc-8.2.0/bin/gcc
+set GCC=/opt/gcc-8.2.0/bin/gcc
 
 # Install MPIs
 INSTALL_PREFIX=/opt
@@ -292,14 +294,14 @@ cd /tmp/mpi
 wget http://mvapich.cse.ohio-state.edu/download/mvapich/mv2/mvapich2-2.3.tar.gz
 tar -xvf mvapich2-2.3.tar.gz
 cd mvapich2-2.3
-./configure --prefix=${INSTALL_PREFIX}/mvapich2-2.3 --enable-g=none --enable-fast=yes && make -j 40 && make install
+./configure --prefix=${INSTALL_PREFIX}/mvapich2-2.3 --enable-g=none --enable-fast=yes && make -j 8 && make install
 cd ..
 
 # UCX 1.5.0 RC1
 wget https://github.com/openucx/ucx/releases/download/v1.5.0-rc1/ucx-1.5.0.tar.gz
 tar -xvf ucx-1.5.0.tar.gz 
 cd ucx-1.5.0
-./contrib/configure-release --prefix=${INSTALL_PREFIX}/ucx-1.5.0 && make -j 40 && make install
+./contrib/configure-release --prefix=${INSTALL_PREFIX}/ucx-1.5.0 && make -j 8 && make install
 cd ..
 
 # HPC-X v2.3.0
@@ -315,7 +317,7 @@ cd /tmp/mpi
 wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.0.tar.gz
 tar -xvf openmpi-4.0.0.tar.gz
 cd openmpi-4.0.0
-./configure --prefix=${INSTALL_PREFIX}/openmpi-4.0.0 --with-ucx=${INSTALL_PREFIX}/ucx-1.5.0 --enable-mpirun-prefix-by-default && make -j 40 && make install 
+./configure --prefix=${INSTALL_PREFIX}/openmpi-4.0.0 --with-ucx=${INSTALL_PREFIX}/ucx-1.5.0 --enable-mpirun-prefix-by-default && make -j 8 && make install
 cd ..
 
 # MPICH 3.3
