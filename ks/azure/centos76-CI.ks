@@ -191,7 +191,9 @@ sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
 sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
 sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
 sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
-sed -i 's/After=network-online.target/WantedBy=cloud-init.service/g' /lib/systemd/system/waagent.service
+cp /lib/systemd/system/waagent.service /etc/systemd/system/waagent.service
+sed -i 's/After=network-online.target/WantedBy=cloud-init.service\nAfter=network.service systemd-networkd-wait-online.service/g' /etc/systemd/system/waagent.service
+systemctl daemon-reload
 
 # Update the default cloud.cfg to move disk setup to the beginning of init phase
 sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
@@ -209,9 +211,11 @@ datasource:
       agent_command: [systemctl, start, waagent, --no-block]
 EOF
 
-echo removing swapfile
-swapoff /mnt/resource/swapfile
-rm /mnt/resource/swapfile -f
+if [[ -f /mnt/resource/swapfile ]]; then
+    echo removing swapfile
+    swapoff /mnt/resource/swapfile
+    rm /mnt/resource/swapfile -f
+fi
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
