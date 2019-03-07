@@ -297,8 +297,8 @@ cd mvapich2-2.3
 ./configure --prefix=${INSTALL_PREFIX}/mvapich2-2.3 --enable-g=none --enable-fast=yes && make -j 8 && make install
 cd ..
 
-# UCX 1.5.0 RC1
-wget https://github.com/openucx/ucx/releases/download/v1.5.0-rc1/ucx-1.5.0.tar.gz
+# UCX 1.5.0
+wget https://github.com/openucx/ucx/releases/download/v1.5.0/ucx-1.5.0.tar.gz
 tar -xvf ucx-1.5.0.tar.gz 
 cd ucx-1.5.0
 ./contrib/configure-release --prefix=${INSTALL_PREFIX}/ucx-1.5.0 && make -j 8 && make install
