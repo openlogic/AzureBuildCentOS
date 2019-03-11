@@ -413,6 +413,7 @@ EOF
 
 # Modify yum
 echo "http_caching=packages" >> /etc/yum.conf
+yum history sync
 yum clean all
 
 # Set tuned profile
