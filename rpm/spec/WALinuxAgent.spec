@@ -2,14 +2,13 @@
 # Name: walinuxagent.spec
 #-------------------------------------------------------------------------------
 # Purpose : RPM Spec file for Python script packaging
-# Version : 2.2.32
+# Version : 2.2.38
 # Created : April 20 2012
 #===============================================================================
 
 %define name WALinuxAgent
-%define version 2.2.32
-%define unmangled_version 2.2.32
-%define unmangled_version 2.2.32
+%define version 2.2.38
+%define unmangled_version 2.2.38
 %define release 1
 
 %if 0%{?rhel} < 7
@@ -118,6 +117,8 @@ fi
 %defattr(-,root,root)
 
 %changelog
+* Fri Mar 22 2019 - Andrew Pomponio <Andrew.Pomponio@roguewave.com>
+- Updated version to 2.2.38 for release
 * Mon Oct 22 2018 - mike.hagan@roguewave.com
 - Updated version to 2.2.32 for release
 * Fri Sep 24 2018 - mike.hagan@roguewave.com
