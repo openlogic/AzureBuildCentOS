@@ -37,6 +37,7 @@ Requires: openssh-server
 Requires: openssl
 Requires: parted
 Requires: python-pyasn1
+Requires: iptables
 
 %if %{initsys} == systemd
 Requires:       NetworkManager
