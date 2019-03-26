@@ -72,6 +72,7 @@ cifs-utils
 sudo
 python-pyasn1
 parted
+WALinuxAgent
 hypervkvpd
 azure-repo-svc
 -dracut-config-rescue
@@ -225,18 +226,9 @@ sed -i 's/LOAD_EIPOIB=no/LOAD_EIPOIB=yes/g' /etc/infiniband/openib.conf
 /etc/init.d/openibd restart
 cd && rm -rf /tmp/mlnxofed
 
-# Install WALinuxAgent
-mkdir -p /tmp/wala
-cd /tmp/wala
-wget https://github.com/Azure/WALinuxAgent/archive/v2.2.36.tar.gz
-tar -xvf v2.2.36.tar.gz
-cd WALinuxAgent-2.2.36
-python setup.py install --register-service --force
+# Configure WALinuxAgent
 sed -i -e 's/# OS.EnableRDMA=y/OS.EnableRDMA=y/g' /etc/waagent.conf
-sed -i -e 's/AutoUpdate.Enabled=y/# AutoUpdate.Enabled=y/g' /etc/waagent.conf
-systemctl restart waagent
-cd && rm -rf /tmp/wala
-
+systemctl enable waagent
 
 # Install gcc 8.2
 mkdir -p /tmp/setup-gcc
@@ -422,6 +414,5 @@ echo "virtual-guest" > /etc/tuned/active_profile
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
-rm -f /etc/resolv.conf 2>/dev/null # workaround old agent bug
 
 %end
