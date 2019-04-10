@@ -191,9 +191,6 @@ sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
 sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
 sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
 sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
-cp /lib/systemd/system/waagent.service /etc/systemd/system/waagent.service
-sed -i 's/After=network-online.target/WantedBy=cloud-init.service\nAfter=network.service systemd-networkd-wait-online.service/g' /etc/systemd/system/waagent.service
-systemctl daemon-reload
 
 # Update the default cloud.cfg to move disk setup to the beginning of init phase
 sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
@@ -206,9 +203,16 @@ cloud-init clean
 cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
 # This configuration file is used to connect to the Azure DS sooner
 datasource_list: [ Azure ]
-datasource:
-   Azure:
-      agent_command: [systemctl, start, waagent, --no-block]
+EOF
+
+# Enable the KVP telemetry
+cat > /etc/cloud/cloud.cfg.d/10-azure-kvp.cfg <<EOF
+# This configuration file is used to enable logging to Hyper-V kvp
+reporting:
+  logging:
+    type: log
+  telemetry:
+    type: hyperv
 EOF
 
 if [[ -f /mnt/resource/swapfile ]]; then
