@@ -205,16 +205,6 @@ cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
 datasource_list: [ Azure ]
 EOF
 
-# Enable the KVP telemetry
-cat > /etc/cloud/cloud.cfg.d/10-azure-kvp.cfg <<EOF
-# This configuration file is used to enable logging to Hyper-V kvp
-reporting:
-  logging:
-    type: log
-  telemetry:
-    type: hyperv
-EOF
-
 if [[ -f /mnt/resource/swapfile ]]; then
     echo removing swapfile
     swapoff /mnt/resource/swapfile
