@@ -321,12 +321,12 @@ cd mpich-3.3
 ./configure --prefix=${INSTALL_PREFIX}/mpich-3.3 --with-ucx=${INSTALL_PREFIX}/ucx-1.5.1 --with-hcoll=${HCOLL_PATH} --enable-g=none --enable-fast=yes --with-device=ch4:ucx   && make -j 8 && make install 
 cd ..
 
-# Intel MPI 2019 (update 3)
-CFG="IntelMPI-v2019.x-silent.cfg"
-wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/15260/l_mpi_2019.3.199.tgz
+# Intel MPI 2018 (update 4)
+CFG="IntelMPI-v2018.x-silent.cfg"
+wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/13651/l_mpi_2018.4.274.tgz
 wget https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
-tar -xvf l_mpi_2019.3.199.tgz
-cd l_mpi_2019.3.199
+tar -xvf l_mpi_2018.4.274.tgz
+cd l_mpi_2018.4.274
 ./install.sh --silent /tmp/mpi/${CFG}
 cd ..
 
@@ -404,21 +404,21 @@ setenv          MPI_MAN         /opt/openmpi-4.0.1/share/man
 setenv          MPI_HOME        /opt/openmpi-4.0.1
 EOF
 
-#IntelMPI-v2019
-cat << EOF >> /usr/share/Modules/modulefiles/mpi/impi-2019.3.199
+#IntelMPI-v2018
+cat << EOF >> /usr/share/Modules/modulefiles/mpi/impi_2018.4.274
 #%Module 1.0
 #
-#  Intel MPI 2019.3.199
+#  Intel MPI 2018.4.274
 #
 conflict        mpi
-prepend-path    PATH            /opt/intel/impi/2019.3.199/intel64/bin
-prepend-path    LD_LIBRARY_PATH /opt/intel/impi/2019.3.199/intel64/lib
-prepend-path    MANPATH         /opt/intel/impi/2019.3.199/man
-setenv          MPI_BIN         /opt/intel/impi/2019.3.199/intel64/bin
-setenv          MPI_INCLUDE     /opt/intel/impi/2019.3.199/intel64/include
-setenv          MPI_LIB         /opt/intel/impi/2019.3.199/intel64/lib
-setenv          MPI_MAN         /opt/intel/impi/2019.3.199/man
-setenv          MPI_HOME        /opt/intel/impi/2019.3.199/intel64
+prepend-path    PATH            /opt/intel/impi/2018.4.274/intel64/bin
+prepend-path    LD_LIBRARY_PATH /opt/intel/impi/2018.4.274/intel64/lib
+prepend-path    MANPATH         /opt/intel/impi/2018.4.274/man
+setenv          MPI_BIN         /opt/intel/impi/2018.4.274/intel64/bin
+setenv          MPI_INCLUDE     /opt/intel/impi/2018.4.274/intel64/include
+setenv          MPI_LIB         /opt/intel/impi/2018.4.274/intel64/lib
+setenv          MPI_MAN         /opt/intel/impi/2018.4.274/man
+setenv          MPI_HOME        /opt/intel/impi/2018.4.274/intel64
 EOF
 
 
