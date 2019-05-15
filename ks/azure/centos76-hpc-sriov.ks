@@ -214,16 +214,13 @@ sysctl -p
 # Install Mellanox OFED
 mkdir -p /tmp/mlnxofed
 cd /tmp/mlnxofed
-wget http://www.mellanox.com/downloads/ofed/MLNX_OFED-4.5-1.0.1.0/MLNX_OFED_LINUX-4.5-1.0.1.0-rhel7.6-x86_64.tgz
-tar zxvf MLNX_OFED_LINUX-4.5-1.0.1.0-rhel7.6-x86_64.tgz
+wget http://www.mellanox.com/downloads/ofed/MLNX_OFED-4.6-1.0.1.1/MLNX_OFED_LINUX-4.6-1.0.1.1-rhel7.6-x86_64.tgz
+tar zxvf MLNX_OFED_LINUX-4.6-1.0.1.1-rhel7.6-x86_64.tgz
 
 KERNEL=( $(rpm -q kernel | sed 's/kernel\-//g') )
 KERNEL=${KERNEL[-1]}
 yum install -y kernel-devel-${KERNEL}
-./MLNX_OFED_LINUX-4.5-1.0.1.0-rhel7.6-x86_64/mlnxofedinstall --kernel $KERNEL --kernel-sources /usr/src/kernels/${KERNEL} --add-kernel-support --skip-repo
-
-sed -i 's/LOAD_EIPOIB=no/LOAD_EIPOIB=yes/g' /etc/infiniband/openib.conf
-/etc/init.d/openibd restart
+./MLNX_OFED_LINUX-4.6-1.0.1.1-rhel7.6-x86_64/mlnxofedinstall --kernel $KERNEL --kernel-sources /usr/src/kernels/${KERNEL} --add-kernel-support --skip-repo
 cd && rm -rf /tmp/mlnxofed
 
 # Configure WALinuxAgent
@@ -298,13 +295,13 @@ cd ucx-1.5.1
 ./contrib/configure-release --prefix=${INSTALL_PREFIX}/ucx-1.5.1 && make -j 8 && make install
 cd ..
 
-# HPC-X v2.3.0
+# HPC-X v2.4.1
 cd ${INSTALL_PREFIX}
-wget http://www.mellanox.com/downloads/hpc/hpc-x/v2.3/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64.tbz
-tar -xvf hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64.tbz
-HPCX_PATH=${INSTALL_PREFIX}/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64
+wget ftp://bgate.mellanox.com/uploads/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
+tar -xvf hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
+HPCX_PATH=${INSTALL_PREFIX}/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
 HCOLL_PATH=${HPCX_PATH}/hcoll
-rm -rf hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64.tbz
+rm -rf hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
 cd /tmp/mpi
 
 # OpenMPI 4.0.1
@@ -336,21 +333,21 @@ cd && rm -rf /tmp/mpi
 mkdir -p /usr/share/Modules/modulefiles/mpi/
 
 # HPC-X
-cat << EOF >> /usr/share/Modules/modulefiles/mpi/hpcx-v2.3.0
+cat << EOF >> /usr/share/Modules/modulefiles/mpi/hpcx-v2.4.1
 #%Module 1.0
 #
-#  HPCx 2.3.0
+#  HPCx 2.4.1
 #
 conflict        mpi
-prepend-path    PATH            /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/bin
-prepend-path    PATH            /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64
-prepend-path    LD_LIBRARY_PATH /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/lib
-prepend-path    MANPATH         /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/share/man
-setenv          MPI_BIN         /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/bin
-setenv          MPI_INCLUDE     /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/include
-setenv          MPI_LIB         /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/lib
-setenv          MPI_MAN         /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/share/man
-setenv          MPI_HOME        /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi
+prepend-path    PATH            /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/bin
+prepend-path    PATH            /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
+prepend-path    LD_LIBRARY_PATH /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/lib
+prepend-path    MANPATH         /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/share/man
+setenv          MPI_BIN         /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/bin
+setenv          MPI_INCLUDE     /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/include
+setenv          MPI_LIB         /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/lib
+setenv          MPI_MAN         /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/share/man
+setenv          MPI_HOME        /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi
 EOF
 
 # MPICH
