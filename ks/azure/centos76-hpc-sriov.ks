@@ -201,7 +201,7 @@ cat << EOF >> /etc/security/limits.conf
 *               hard    memlock         unlimited
 *               soft    memlock         unlimited
 *               soft    nofile          65535
-*               soft    nofile          65535
+*               hard    nofile          65535
 EOF
 
 # Disable GSS proxy
@@ -214,16 +214,13 @@ sysctl -p
 # Install Mellanox OFED
 mkdir -p /tmp/mlnxofed
 cd /tmp/mlnxofed
-wget http://www.mellanox.com/downloads/ofed/MLNX_OFED-4.5-1.0.1.0/MLNX_OFED_LINUX-4.5-1.0.1.0-rhel7.6-x86_64.tgz
-tar zxvf MLNX_OFED_LINUX-4.5-1.0.1.0-rhel7.6-x86_64.tgz
+wget http://www.mellanox.com/downloads/ofed/MLNX_OFED-4.6-1.0.1.1/MLNX_OFED_LINUX-4.6-1.0.1.1-rhel7.6-x86_64.tgz
+tar zxvf MLNX_OFED_LINUX-4.6-1.0.1.1-rhel7.6-x86_64.tgz
 
 KERNEL=( $(rpm -q kernel | sed 's/kernel\-//g') )
 KERNEL=${KERNEL[-1]}
 yum install -y kernel-devel-${KERNEL}
-./MLNX_OFED_LINUX-4.5-1.0.1.0-rhel7.6-x86_64/mlnxofedinstall --kernel $KERNEL --kernel-sources /usr/src/kernels/${KERNEL} --add-kernel-support --skip-repo
-
-sed -i 's/LOAD_EIPOIB=no/LOAD_EIPOIB=yes/g' /etc/infiniband/openib.conf
-/etc/init.d/openibd restart
+./MLNX_OFED_LINUX-4.6-1.0.1.1-rhel7.6-x86_64/mlnxofedinstall --kernel $KERNEL --kernel-sources /usr/src/kernels/${KERNEL} --add-kernel-support --skip-repo
 cd && rm -rf /tmp/mlnxofed
 
 # Configure WALinuxAgent
@@ -298,13 +295,13 @@ cd ucx-1.5.1
 ./contrib/configure-release --prefix=${INSTALL_PREFIX}/ucx-1.5.1 && make -j 8 && make install
 cd ..
 
-# HPC-X v2.3.0
+# HPC-X v2.4.1
 cd ${INSTALL_PREFIX}
-wget http://www.mellanox.com/downloads/hpc/hpc-x/v2.3/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64.tbz
-tar -xvf hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64.tbz
-HPCX_PATH=${INSTALL_PREFIX}/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64
+wget ftp://bgate.mellanox.com/uploads/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
+tar -xvf hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
+HPCX_PATH=${INSTALL_PREFIX}/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
 HCOLL_PATH=${HPCX_PATH}/hcoll
-rm -rf hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64.tbz
+rm -rf hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
 cd /tmp/mpi
 
 # OpenMPI 4.0.1
@@ -321,12 +318,12 @@ cd mpich-3.3
 ./configure --prefix=${INSTALL_PREFIX}/mpich-3.3 --with-ucx=${INSTALL_PREFIX}/ucx-1.5.1 --with-hcoll=${HCOLL_PATH} --enable-g=none --enable-fast=yes --with-device=ch4:ucx   && make -j 8 && make install 
 cd ..
 
-# Intel MPI 2019 (update 3)
-CFG="IntelMPI-v2019.x-silent.cfg"
-wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/15260/l_mpi_2019.3.199.tgz
+# Intel MPI 2018 (update 4)
+CFG="IntelMPI-v2018.x-silent.cfg"
+wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/13651/l_mpi_2018.4.274.tgz
 wget https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
-tar -xvf l_mpi_2019.3.199.tgz
-cd l_mpi_2019.3.199
+tar -xvf l_mpi_2018.4.274.tgz
+cd l_mpi_2018.4.274
 ./install.sh --silent /tmp/mpi/${CFG}
 cd ..
 
@@ -336,21 +333,21 @@ cd && rm -rf /tmp/mpi
 mkdir -p /usr/share/Modules/modulefiles/mpi/
 
 # HPC-X
-cat << EOF >> /usr/share/Modules/modulefiles/mpi/hpcx-v2.3.0
+cat << EOF >> /usr/share/Modules/modulefiles/mpi/hpcx-v2.4.1
 #%Module 1.0
 #
-#  HPCx 2.3.0
+#  HPCx 2.4.1
 #
 conflict        mpi
-prepend-path    PATH            /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/bin
-prepend-path    PATH            /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64
-prepend-path    LD_LIBRARY_PATH /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/lib
-prepend-path    MANPATH         /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/share/man
-setenv          MPI_BIN         /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/bin
-setenv          MPI_INCLUDE     /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/include
-setenv          MPI_LIB         /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/lib
-setenv          MPI_MAN         /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi/share/man
-setenv          MPI_HOME        /opt/hpcx-v2.3.0-gcc-MLNX_OFED_LINUX-4.5-1.0.1.0-redhat7.6-x86_64/ompi
+prepend-path    PATH            /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/bin
+prepend-path    PATH            /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
+prepend-path    LD_LIBRARY_PATH /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/lib
+prepend-path    MANPATH         /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/share/man
+setenv          MPI_BIN         /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/bin
+setenv          MPI_INCLUDE     /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/include
+setenv          MPI_LIB         /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/lib
+setenv          MPI_MAN         /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/share/man
+setenv          MPI_HOME        /opt/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi
 EOF
 
 # MPICH
@@ -404,21 +401,21 @@ setenv          MPI_MAN         /opt/openmpi-4.0.1/share/man
 setenv          MPI_HOME        /opt/openmpi-4.0.1
 EOF
 
-#IntelMPI-v2019
-cat << EOF >> /usr/share/Modules/modulefiles/mpi/impi-2019.3.199
+#IntelMPI-v2018
+cat << EOF >> /usr/share/Modules/modulefiles/mpi/impi_2018.4.274
 #%Module 1.0
 #
-#  Intel MPI 2019.3.199
+#  Intel MPI 2018.4.274
 #
 conflict        mpi
-prepend-path    PATH            /opt/intel/impi/2019.3.199/intel64/bin
-prepend-path    LD_LIBRARY_PATH /opt/intel/impi/2019.3.199/intel64/lib
-prepend-path    MANPATH         /opt/intel/impi/2019.3.199/man
-setenv          MPI_BIN         /opt/intel/impi/2019.3.199/intel64/bin
-setenv          MPI_INCLUDE     /opt/intel/impi/2019.3.199/intel64/include
-setenv          MPI_LIB         /opt/intel/impi/2019.3.199/intel64/lib
-setenv          MPI_MAN         /opt/intel/impi/2019.3.199/man
-setenv          MPI_HOME        /opt/intel/impi/2019.3.199/intel64
+prepend-path    PATH            /opt/intel/impi/2018.4.274/intel64/bin
+prepend-path    LD_LIBRARY_PATH /opt/intel/impi/2018.4.274/intel64/lib
+prepend-path    MANPATH         /opt/intel/impi/2018.4.274/man
+setenv          MPI_BIN         /opt/intel/impi/2018.4.274/intel64/bin
+setenv          MPI_INCLUDE     /opt/intel/impi/2018.4.274/intel64/include
+setenv          MPI_LIB         /opt/intel/impi/2018.4.274/intel64/lib
+setenv          MPI_MAN         /opt/intel/impi/2018.4.274/man
+setenv          MPI_HOME        /opt/intel/impi/2018.4.274/intel64
 EOF
 
 
