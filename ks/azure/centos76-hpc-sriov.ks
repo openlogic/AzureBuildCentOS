@@ -94,6 +94,7 @@ tk
 m4
 glibc-devel
 glibc-static
+libudev-devel
 %end
 
 %post --log=/var/log/anaconda/post-install.log
@@ -301,14 +302,14 @@ wget ftp://bgate.mellanox.com/uploads/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.
 tar -xvf hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
 HPCX_PATH=${INSTALL_PREFIX}/hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
 HCOLL_PATH=${HPCX_PATH}/hcoll
-rm -rf hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
+rm -rf hpcx-v2.4.1-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
 cd /tmp/mpi
 
 # OpenMPI 4.0.1
 wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.1.tar.gz
 tar -xvf openmpi-4.0.1.tar.gz
 cd openmpi-4.0.1
-./configure --prefix=${INSTALL_PREFIX}/openmpi-4.0.1 --with-ucx=${INSTALL_PREFIX}/ucx-1.5.1 --enable-mpirun-prefix-by-default && make -j 8 && make install
+./configure --prefix=${INSTALL_PREFIX}/openmpi-4.0.1 --with-ucx=${INSTALL_PREFIX}/ucx-1.5.1 --with-hcoll=${HCOLL_PATH} --enable-mpirun-prefix-by-default && make -j 8 && make install
 cd ..
 
 # MPICH 3.3
