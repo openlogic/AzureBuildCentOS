@@ -95,6 +95,8 @@ m4
 glibc-devel
 glibc-static
 libudev-devel
+binutils
+binutils-devel
 %end
 
 %post --log=/var/log/anaconda/post-install.log
@@ -290,14 +292,6 @@ cd mvapich2-${MV2_VERSION}
 ./configure --prefix=${INSTALL_PREFIX}/mvapich2-${MV2_VERSION} --enable-g=none --enable-fast=yes && make -j 8 && make install
 cd ..
 
-# UCX 1.5.1
-UCX_VERSION=1.5.1
-wget https://github.com/openucx/ucx/releases/download/v${UCX_VERSION}/ucx-${UCX_VERSION}.tar.gz
-tar -xvf ucx-${UCX_VERSION}.tar.gz
-cd ucx-${UCX_VERSION}
-./contrib/configure-release --prefix=${INSTALL_PREFIX}/ucx-${UCX_VERSION} && make -j 8 && make install
-cd ..
-
 # HPC-X v2.4.1
 HPCX_VERSION="v2.4.1"
 cd ${INSTALL_PREFIX}
@@ -305,6 +299,7 @@ wget ftp://bgate.mellanox.com/uploads/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4
 tar -xvf hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
 HPCX_PATH=${INSTALL_PREFIX}/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
 HCOLL_PATH=${HPCX_PATH}/hcoll
+UCX_PATH=${HPCX_PATH}/ucx
 rm -rf hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
 cd /tmp/mpi
 
@@ -313,7 +308,7 @@ OMPI_VERSION="4.0.1"
 wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-${OMPI_VERSION}.tar.gz
 tar -xvf openmpi-${OMPI_VERSION}.tar.gz
 cd openmpi-${OMPI_VERSION}
-./configure --prefix=${INSTALL_PREFIX}/openmpi-${OMPI_VERSION} --with-ucx=${INSTALL_PREFIX}/ucx-${UCX_VERSION} --with-hcoll=${HCOLL_PATH} --enable-mpirun-prefix-by-default && make -j 8 && make install
+./configure --prefix=${INSTALL_PREFIX}/openmpi-${OMPI_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-mpirun-prefix-by-default && make -j 8 && make install
 cd ..
 
 # MPICH 3.3
@@ -321,7 +316,7 @@ MPICH_VERSION="3.3"
 wget http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz
 tar -xvf mpich-${MPICH_VERSION}.tar.gz
 cd mpich-${MPICH_VERSION}
-./configure --prefix=${INSTALL_PREFIX}/mpich-${MPICH_VERSION} --with-ucx=${INSTALL_PREFIX}/ucx-${UCX_VERSION} --with-hcoll=${HCOLL_PATH} --enable-g=none --enable-fast=yes --with-device=ch4:ucx   && make -j 8 && make install 
+./configure --prefix=${INSTALL_PREFIX}/mpich-${MPICH_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-g=none --enable-fast=yes --with-device=ch4:ucx   && make -j 8 && make install
 cd ..
 
 # Intel MPI 2018 (update 4)
