@@ -229,6 +229,9 @@ sed -i -e 's/# OS.EnableRDMA=y/OS.EnableRDMA=y/g' /etc/waagent.conf
 sed -i -e 's/CGroups.EnforceLimits=n/CGroups.EnforceLimits=y/g' /etc/waagent.conf
 systemctl enable waagent
 
+# Default path
+LD_LIBRARY_PATH=${LD_LIBRARY_PATH-}:/usr/lib64:/usr/local/lib
+
 # Install gcc 8.2
 mkdir -p /tmp/setup-gcc
 cd /tmp/setup-gcc
@@ -236,7 +239,7 @@ cd /tmp/setup-gcc
 wget ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2
 tar -xvf gmp-6.1.0.tar.bz2
 cd ./gmp-6.1.0
-./configure && make -j 8 && make install
+./configure --enable-cxx=detect && make -j 8 && make install
 cd ..
 
 wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2
