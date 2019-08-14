@@ -284,8 +284,8 @@ INSTALL_PREFIX=/opt
 mkdir -p /tmp/mpi
 cd /tmp/mpi
 
-# MVAPICH2 2.3.1
-MV2_VERSION="2.3.1"
+# MVAPICH2 2.3.2
+MV2_VERSION="2.3.2"
 wget http://mvapich.cse.ohio-state.edu/download/mvapich/mv2/mvapich2-${MV2_VERSION}.tar.gz
 tar -xvf mvapich2-${MV2_VERSION}.tar.gz
 cd mvapich2-${MV2_VERSION}
@@ -311,8 +311,8 @@ cd openmpi-${OMPI_VERSION}
 ./configure --prefix=${INSTALL_PREFIX}/openmpi-${OMPI_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-mpirun-prefix-by-default && make -j 8 && make install
 cd ..
 
-# MPICH 3.3
-MPICH_VERSION="3.3"
+# MPICH 3.3.1
+MPICH_VERSION="3.3.1"
 wget http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz
 tar -xvf mpich-${MPICH_VERSION}.tar.gz
 cd mpich-${MPICH_VERSION}
