@@ -341,15 +341,7 @@ cat << EOF >> /usr/share/Modules/modulefiles/mpi/hpcx-${HPCX_VERSION}
 #  HPCx 2.4.1
 #
 conflict        mpi
-prepend-path    PATH            /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/bin
-prepend-path    PATH            /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
-prepend-path    LD_LIBRARY_PATH /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/lib
-prepend-path    MANPATH         /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/share/man
-setenv          MPI_BIN         /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/bin
-setenv          MPI_INCLUDE     /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/include
-setenv          MPI_LIB         /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/lib
-setenv          MPI_MAN         /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/share/man
-setenv          MPI_HOME        /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi
+module load /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/modulefiles/hpcx
 EOF
 
 # MPICH
