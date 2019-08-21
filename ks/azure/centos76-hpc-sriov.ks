@@ -287,8 +287,8 @@ INSTALL_PREFIX=/opt
 mkdir -p /tmp/mpi
 cd /tmp/mpi
 
-# MVAPICH2 2.3.1
-MV2_VERSION="2.3.1"
+# MVAPICH2 2.3.2
+MV2_VERSION="2.3.2"
 wget http://mvapich.cse.ohio-state.edu/download/mvapich/mv2/mvapich2-${MV2_VERSION}.tar.gz
 tar -xvf mvapich2-${MV2_VERSION}.tar.gz
 cd mvapich2-${MV2_VERSION}
@@ -314,8 +314,8 @@ cd openmpi-${OMPI_VERSION}
 ./configure --prefix=${INSTALL_PREFIX}/openmpi-${OMPI_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-mpirun-prefix-by-default && make -j 8 && make install
 cd ..
 
-# MPICH 3.3
-MPICH_VERSION="3.3"
+# MPICH 3.3.1
+MPICH_VERSION="3.3.1"
 wget http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz
 tar -xvf mpich-${MPICH_VERSION}.tar.gz
 cd mpich-${MPICH_VERSION}
@@ -344,15 +344,7 @@ cat << EOF >> /usr/share/Modules/modulefiles/mpi/hpcx-${HPCX_VERSION}
 #  HPCx 2.4.1
 #
 conflict        mpi
-prepend-path    PATH            /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/bin
-prepend-path    PATH            /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
-prepend-path    LD_LIBRARY_PATH /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/lib
-prepend-path    MANPATH         /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/share/man
-setenv          MPI_BIN         /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/bin
-setenv          MPI_INCLUDE     /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/include
-setenv          MPI_LIB         /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/lib
-setenv          MPI_MAN         /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi/share/man
-setenv          MPI_HOME        /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/ompi
+module load /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/modulefiles/hpcx
 EOF
 
 # MPICH
@@ -423,6 +415,12 @@ setenv          MPI_MAN         /opt/intel/impi/${IMPI_VERSION}/man
 setenv          MPI_HOME        /opt/intel/impi/${IMPI_VERSION}/intel64
 EOF
 
+# Create symlinks for modulefiles
+ls -s /usr/share/Modules/modulefiles/mpi/hpcx-${HPCX_VERSION} /usr/share/Modules/modulefiles/mpi/hpcx
+ls -s /usr/share/Modules/modulefiles/mpi/mpich-${MPICH_VERSION} /usr/share/Modules/modulefiles/mpi/mpich
+ls -s /usr/share/Modules/modulefiles/mpi/mvapich2-${MV2_VERSION} /usr/share/Modules/modulefiles/mpi/mvapich2
+ls -s /usr/share/Modules/modulefiles/mpi/openmpi-${OMPI_VERSION} /usr/share/Modules/modulefiles/mpi/openmpi
+ls -s /usr/share/Modules/modulefiles/mpi/impi_${IMPI_VERSION} /usr/share/Modules/modulefiles/mpi/impi
 
 # Modify yum
 echo "http_caching=packages" >> /etc/yum.conf
