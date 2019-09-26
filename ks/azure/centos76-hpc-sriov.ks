@@ -322,10 +322,10 @@ cd mpich-${MPICH_VERSION}
 ./configure --prefix=${INSTALL_PREFIX}/mpich-${MPICH_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-g=none --enable-fast=yes --with-device=ch4:ucx   && make -j 8 && make install
 cd ..
 
-# Intel MPI 2018 (update 4)
-IMPI_VERSION="2018.4.274"
-CFG="IntelMPI-v2018.x-silent.cfg"
-wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/13651/l_mpi_${IMPI_VERSION}.tgz
+# Intel MPI 2019 (update 5)
+IMPI_VERSION="2019.5.281"
+CFG="IntelMPI-v2019.x-silent.cfg"
+wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/15838/l_mpi_${IMPI_VERSION}.tgz
 wget https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
 tar -xvf l_mpi_${IMPI_VERSION}.tgz
 cd l_mpi_${IMPI_VERSION}
@@ -341,7 +341,7 @@ mkdir -p /usr/share/Modules/modulefiles/mpi/
 cat << EOF >> /usr/share/Modules/modulefiles/mpi/hpcx-${HPCX_VERSION}
 #%Module 1.0
 #
-#  HPCx 2.4.1
+#  HPCx $(HPCX_VERSION)
 #
 conflict        mpi
 module load /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/modulefiles/hpcx
@@ -368,7 +368,7 @@ EOF
 cat << EOF >> /usr/share/Modules/modulefiles/mpi/mvapich2-${MV2_VERSION}
 #%Module 1.0
 #
-#  MVAPICH2 2.3
+#  MVAPICH2 $(MV2_VERSION)
 #
 conflict        mpi
 prepend-path    PATH            /opt/mvapich2-${MV2_VERSION}/bin
@@ -398,7 +398,7 @@ setenv          MPI_MAN         /opt/openmpi-${OMPI_VERSION}/share/man
 setenv          MPI_HOME        /opt/openmpi-${OMPI_VERSION}
 EOF
 
-#IntelMPI-v2018
+#IntelMPI
 cat << EOF >> /usr/share/Modules/modulefiles/mpi/impi_${IMPI_VERSION}
 #%Module 1.0
 #
