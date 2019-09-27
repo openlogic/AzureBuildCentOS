@@ -27,7 +27,7 @@ repo --name="AppStream" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,dnsmasq,NetworkManager"
+services --enabled="sshd,waagent,NetworkManager,systemd-resolved"
 
 # System timezone
 timezone Etc/UTC --isUtc
@@ -65,7 +65,7 @@ poweroff
 WALinuxAgent
 @base
 @core
-@container-tools
+#@container-tools
 chrony
 sudo
 parted
@@ -74,7 +74,7 @@ parted
 -NetworkManager-config-server
 openssh-server
 kernel
-yum-utils
+dnf-utils
 rng-tools
 centos-release
 
@@ -176,6 +176,9 @@ cat <<EOF > /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules
 SUBSYSTEM=="net", DRIVERS=="hv_pci", ACTION=="add", ENV{NM_UNMANAGED}="1"
 
 EOF
+
+# Enable DNS cache
+sed -i 's/hosts:\s*files dns myhostname/hosts:      files resolve dns myhostname/' /etc/nsswitch.conf
 
 # Update dnf configuration
 echo "http_caching=packages" >> /etc/dnf/dnf.conf
