@@ -311,7 +311,7 @@ OMPI_VERSION="4.0.1"
 wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-${OMPI_VERSION}.tar.gz
 tar -xvf openmpi-${OMPI_VERSION}.tar.gz
 cd openmpi-${OMPI_VERSION}
-./configure --prefix=${INSTALL_PREFIX}/openmpi-${OMPI_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-mpirun-prefix-by-default && make -j && make install
+./configure --prefix=${INSTALL_PREFIX}/openmpi-${OMPI_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-mpirun-prefix-by-default --with-platform=contrib/platform/mellanox/optimized && make -j && make install
 cd ..
 
 # MPICH 3.3.1
