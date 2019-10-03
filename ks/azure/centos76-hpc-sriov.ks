@@ -217,13 +217,13 @@ sysctl -p
 # Install Mellanox OFED
 mkdir -p /tmp/mlnxofed
 cd /tmp/mlnxofed
-wget http://www.mellanox.com/downloads/ofed/MLNX_OFED-4.6-1.0.1.1/MLNX_OFED_LINUX-4.6-1.0.1.1-rhel7.6-x86_64.tgz
-tar zxvf MLNX_OFED_LINUX-4.6-1.0.1.1-rhel7.6-x86_64.tgz
+wget https://www.mellanox.com/downloads/ofed/MLNX_OFED-4.7-1.0.0.1/MLNX_OFED_LINUX-4.7-1.0.0.1-rhel7.6-x86_64.tgz
+tar zxvf MLNX_OFED_LINUX-4.7-1.0.0.1-rhel7.6-x86_64.tgz
 
 KERNEL=( $(rpm -q kernel | sed 's/kernel\-//g') )
 KERNEL=${KERNEL[-1]}
 yum install -y kernel-devel-${KERNEL}
-./MLNX_OFED_LINUX-4.6-1.0.1.1-rhel7.6-x86_64/mlnxofedinstall --kernel $KERNEL --kernel-sources /usr/src/kernels/${KERNEL} --add-kernel-support --skip-repo
+./MLNX_OFED_LINUX-4.7-1.0.0.1-rhel7.6-x86_64/mlnxofedinstall --kernel $KERNEL --kernel-sources /usr/src/kernels/${KERNEL} --add-kernel-support --skip-repo
 cd && rm -rf /tmp/mlnxofed
 
 # Configure WALinuxAgent
@@ -295,15 +295,15 @@ cd mvapich2-${MV2_VERSION}
 ./configure --prefix=${INSTALL_PREFIX}/mvapich2-${MV2_VERSION} --enable-g=none --enable-fast=yes && make -j 8 && make install
 cd ..
 
-# HPC-X v2.4.1
-HPCX_VERSION="v2.4.1"
+# HPC-X v2.5.0
+HPCX_VERSION="v2.5.0"
 cd ${INSTALL_PREFIX}
-wget ftp://bgate.mellanox.com/uploads/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
-tar -xvf hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
-HPCX_PATH=${INSTALL_PREFIX}/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64
+wget http://www.mellanox.com/downloads/hpc/hpc-x/v2.6/hpcx-v2.5.0-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64.tbz
+tar -xvf hpcx-v2.5.0-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64.tbz
+HPCX_PATH=${INSTALL_PREFIX}/hpcx-v2.5.0-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64
 HCOLL_PATH=${HPCX_PATH}/hcoll
 UCX_PATH=${HPCX_PATH}/ucx
-rm -rf hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64.tbz
+rm -rf hpcx-v2.5.0-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64.tbz
 cd /tmp/mpi
 
 # OpenMPI 4.0.1
@@ -322,10 +322,10 @@ cd mpich-${MPICH_VERSION}
 ./configure --prefix=${INSTALL_PREFIX}/mpich-${MPICH_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-g=none --enable-fast=yes --with-device=ch4:ucx   && make -j 8 && make install
 cd ..
 
-# Intel MPI 2018 (update 4)
-IMPI_VERSION="2018.4.274"
-CFG="IntelMPI-v2018.x-silent.cfg"
-wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/13651/l_mpi_${IMPI_VERSION}.tgz
+# Intel MPI 2019 (update 5)
+IMPI_VERSION="2019.5.281"
+CFG="IntelMPI-v2019.x-silent.cfg"
+wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/15838/l_mpi_${IMPI_VERSION}.tgz
 wget https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
 tar -xvf l_mpi_${IMPI_VERSION}.tgz
 cd l_mpi_${IMPI_VERSION}
@@ -341,10 +341,10 @@ mkdir -p /usr/share/Modules/modulefiles/mpi/
 cat << EOF >> /usr/share/Modules/modulefiles/mpi/hpcx-${HPCX_VERSION}
 #%Module 1.0
 #
-#  HPCx 2.4.1
+#  HPCx $(HPCX_VERSION)
 #
 conflict        mpi
-module load /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.6-1.0.1.1-redhat7.6-x86_64/modulefiles/hpcx
+module load /opt/hpcx-v2.5.0-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64/modulefiles/hpcx
 EOF
 
 # MPICH
@@ -368,7 +368,7 @@ EOF
 cat << EOF >> /usr/share/Modules/modulefiles/mpi/mvapich2-${MV2_VERSION}
 #%Module 1.0
 #
-#  MVAPICH2 2.3
+#  MVAPICH2 $(MV2_VERSION)
 #
 conflict        mpi
 prepend-path    PATH            /opt/mvapich2-${MV2_VERSION}/bin
@@ -398,7 +398,7 @@ setenv          MPI_MAN         /opt/openmpi-${OMPI_VERSION}/share/man
 setenv          MPI_HOME        /opt/openmpi-${OMPI_VERSION}
 EOF
 
-#IntelMPI-v2018
+#IntelMPI
 cat << EOF >> /usr/share/Modules/modulefiles/mpi/impi_${IMPI_VERSION}
 #%Module 1.0
 #
