@@ -38,12 +38,12 @@ clearpart --all --initlabel
 # Clear the MBR
 zerombr
 
-# Disk partitioning information
+# Bootloader and disk partitioning information
+bootloader --location=mbr --timeout=1
+part bios_boot --fstype="biosboot" --size=4
+part /boot/efi --fstype=efi --size=500
 part /boot --fstype="xfs" --size=500
 part / --fstype="xfs" --size=1 --grow --asprimary
-
-# System bootloader configuration
-bootloader --location=mbr --timeout=1
 
 # Firewall configuration
 firewall --disabled
@@ -72,6 +72,8 @@ parted
 -dracut-config-rescue
 -postfix
 -NetworkManager-config-server
+grub2-pc
+grub2-pc-modules 
 openssh-server
 kernel
 dnf-utils
@@ -146,6 +148,10 @@ EOF
 
 # Rebuild grub.cfg
 grub2-mkconfig -o /boot/grub2/grub.cfg
+
+# Enable BIOS/UEFI bootloaders
+grub2-install -d /usr/lib/grub/i386-pc/ /dev/sda
+cat /etc/grub2-efi.cfg | sed -e 's/linuxefi/linux/' -e 's/initrdefi/initrd/' > /boot/grub2/grub.cfg
 
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
