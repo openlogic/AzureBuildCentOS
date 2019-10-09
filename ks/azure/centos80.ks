@@ -40,7 +40,7 @@ zerombr
 
 # Bootloader and disk partitioning information
 bootloader --location=mbr --timeout=1
-part bios_boot --fstype="biosboot" --size=4
+part bios_boot --size=4
 part /boot/efi --fstype=efi --size=500
 part /boot --fstype="xfs" --size=500
 part / --fstype="xfs" --size=1 --grow --asprimary
@@ -150,6 +150,8 @@ EOF
 grub2-mkconfig -o /boot/grub2/grub.cfg
 
 # Enable BIOS/UEFI bootloaders
+  ## rhinstaller-blivet seems to not like --fstype="biosboot" above
+  sgdisk --typecode=1:ef02 /dev/sda
 grub2-install -d /usr/lib/grub/i386-pc/ /dev/sda
 cat /etc/grub2-efi.cfg | sed -e 's/linuxefi/linux/' -e 's/initrdefi/initrd/' > /boot/grub2/grub.cfg
 
