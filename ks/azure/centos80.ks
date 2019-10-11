@@ -40,7 +40,7 @@ zerombr
 
 # Bootloader and disk partitioning information
 bootloader --location=mbr --timeout=1
-part biosboot --size=4
+part biosboot --size=1
 part /boot/efi --fstype=vfat --size=500
 part /boot --fstype="xfs" --size=500
 part / --fstype="xfs" --size=1 --grow --asprimary
