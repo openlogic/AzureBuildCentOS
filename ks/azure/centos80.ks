@@ -32,19 +32,6 @@ services --enabled="sshd,waagent,NetworkManager,systemd-resolved"
 # System timezone
 timezone Etc/UTC --isUtc
 
-# Partition clearing information
-clearpart --all --initlabel
-
-# Clear the MBR
-zerombr
-
-# Bootloader and disk partitioning information
-bootloader --location=mbr --timeout=1
-part biosboot --size=1
-part /boot/efi --fstype=vfat --size=500
-part /boot --fstype="xfs" --size=500
-part / --fstype="xfs" --size=1 --grow --asprimary
-
 # Firewall configuration
 firewall --disabled
 
@@ -56,6 +43,26 @@ skipx
 
 # Power down the machine after install
 poweroff
+
+# Partition clearing information
+#clearpart --all --initlabel
+# Bootloader and disk partitioning information
+zerombr
+bootloader --location=mbr --timeout=1
+part biosboot --onpart=sda1
+part /boot/efi --fstype=vfat --size=500
+part /boot --fstype="xfs" --size=500
+part / --fstype="xfs" --size=1 --grow --asprimary
+
+# Pre-create the biosboot partition
+%pre --log=/var/log/anaconda/pre-install.log --erroronfail
+
+#!/bin/bash
+sgdisk --clear
+sgdisk --new=0:2048:4M /dev/sda
+sgdisk --typecode=1:EF02
+
+%end
 
 # Disable kdump
 %addon com_redhat_kdump --disable
@@ -117,6 +124,7 @@ gdisk
 
 %end
 
+
 %post --log=/var/log/anaconda/post-install.log --erroronfail
 
 #!/bin/bash
@@ -143,15 +151,13 @@ blacklist nouveau
 options nouveau modeset=0
 EOF
 
-# Rebuild grub.cfg
-grub2-mkconfig -o /boot/grub2/grub.cfg
-
 # Enable BIOS/UEFI bootloaders
   ## rhinstaller-blivet seems to not like --fstype="biosboot" above
 #  sgdisk --typecode=1:ef02 /dev/sda
 #  sgdisk --typecode=2:ef00 /dev/sda
 grub2-install -d /usr/lib/grub/i386-pc/ /dev/sda
-cat /etc/grub2-efi.cfg | sed -e 's/linuxefi/linux/' -e 's/initrdefi/initrd/' > /boot/grub2/grub.cfg
+#cat /etc/grub2-efi.cfg | sed -e 's/linuxefi/linux/' -e 's/initrdefi/initrd/' > /boot/grub2/grub.cfg
+grub2-mkconfig -o /boot/grub2/grub.cfg
 
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
