@@ -49,7 +49,7 @@ poweroff
 # Bootloader and disk partitioning information
 zerombr
 bootloader --location=mbr --timeout=1
-part biosboot --onpart=sda1
+#part biosboot --onpart=sda1
 part /boot/efi --fstype=vfat --size=500
 part /boot --fstype="xfs" --size=500
 part / --fstype="xfs" --size=1 --grow --asprimary
