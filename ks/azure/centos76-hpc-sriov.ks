@@ -341,10 +341,10 @@ mkdir -p /usr/share/Modules/modulefiles/mpi/
 cat << EOF >> /usr/share/Modules/modulefiles/mpi/hpcx-${HPCX_VERSION}
 #%Module 1.0
 #
-#  HPCx $(HPCX_VERSION)
+#  HPCx ${HPCX_VERSION}
 #
 conflict        mpi
-module load /opt/hpcx-v2.5.0-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64/modulefiles/hpcx
+module load /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64/modulefiles/hpcx
 EOF
 
 # MPICH
@@ -368,7 +368,7 @@ EOF
 cat << EOF >> /usr/share/Modules/modulefiles/mpi/mvapich2-${MV2_VERSION}
 #%Module 1.0
 #
-#  MVAPICH2 $(MV2_VERSION)
+#  MVAPICH2 ${MV2_VERSION}
 #
 conflict        mpi
 prepend-path    PATH            /opt/mvapich2-${MV2_VERSION}/bin
@@ -416,11 +416,11 @@ setenv          MPI_HOME        /opt/intel/impi/${IMPI_VERSION}/intel64
 EOF
 
 # Create symlinks for modulefiles
-ls -s /usr/share/Modules/modulefiles/mpi/hpcx-${HPCX_VERSION} /usr/share/Modules/modulefiles/mpi/hpcx
-ls -s /usr/share/Modules/modulefiles/mpi/mpich-${MPICH_VERSION} /usr/share/Modules/modulefiles/mpi/mpich
-ls -s /usr/share/Modules/modulefiles/mpi/mvapich2-${MV2_VERSION} /usr/share/Modules/modulefiles/mpi/mvapich2
-ls -s /usr/share/Modules/modulefiles/mpi/openmpi-${OMPI_VERSION} /usr/share/Modules/modulefiles/mpi/openmpi
-ls -s /usr/share/Modules/modulefiles/mpi/impi_${IMPI_VERSION} /usr/share/Modules/modulefiles/mpi/impi
+ln -s /usr/share/Modules/modulefiles/mpi/hpcx-${HPCX_VERSION} /usr/share/Modules/modulefiles/mpi/hpcx
+ln -s /usr/share/Modules/modulefiles/mpi/mpich-${MPICH_VERSION} /usr/share/Modules/modulefiles/mpi/mpich
+ln -s /usr/share/Modules/modulefiles/mpi/mvapich2-${MV2_VERSION} /usr/share/Modules/modulefiles/mpi/mvapich2
+ln -s /usr/share/Modules/modulefiles/mpi/openmpi-${OMPI_VERSION} /usr/share/Modules/modulefiles/mpi/openmpi
+ln -s /usr/share/Modules/modulefiles/mpi/impi_${IMPI_VERSION} /usr/share/Modules/modulefiles/mpi/impi
 
 # Modify yum
 echo "http_caching=packages" >> /etc/yum.conf
