@@ -58,11 +58,11 @@ part / --fstype="xfs" --size=1 --grow --asprimary
 #!/bin/bash
 
 # Pre-create the biosboot partition
-sgdisk --clear
+sgdisk --clear /dev/sda
 sgdisk --new=14:2048:10239 /dev/sda
 sgdisk --new=15:10240:500M /dev/sda
-sgdisk --typecode=14:EF02
-sgdisk --typecode=15:EF00
+sgdisk --typecode=14:EF02 /dev/sda
+sgdisk --typecode=15:EF00 /dev/sda
 
 %end
 
