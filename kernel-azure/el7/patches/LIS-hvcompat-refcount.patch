@@ -1,0 +1,63 @@
+--- linux-3.10.0-957.5.1.el7.orig/include/linux/hv_compat.h	2019-02-05 22:00:14.080040533 +0000
++++ linux-3.10.0-957.5.1.el7.lis/include/linux/hv_compat.h	2019-02-05 22:04:53.832236564 +0000
+@@ -3,6 +3,7 @@
+ #define _HV_COMPAT_H
+ 
+ #include <linux/version.h>
++#include <linux/refcount.h>
+ 
+ /*
+  *  * Helpers for determining EXTRAVERSION info on RHEL/CentOS update kernels
+@@ -555,52 +556,6 @@
+  */
+ #define FC_PORT_ROLE_FCP_DUMMY_INITIATOR        0x08
+ 
+-/**
+- * refcount_t - variant of atomic_t specialized for reference counts
+- * @refs: atomic_t counter field
+- *
+- * The counter saturates at UINT_MAX and will not move once
+- * there. This avoids wrapping the counter and causing 'spurious'
+- * use-after-free bugs.
+- */
+-typedef struct refcount_struct {
+-	atomic_t refs;
+-} refcount_t;
+-
+-static inline bool refcount_sub_and_test(unsigned int i, refcount_t *r)
+-{
+-	unsigned int old, new, val = atomic_read(&r->refs);
+-
+-	do {
+-		if (unlikely(val == UINT_MAX))
+-			return false;
+-
+-		new = val - i;
+-		if (new > val) {
+-			WARN_ONCE(new > val, "refcount_t: underflow; use-after-free.\n");
+-			return false;
+-		}
+-
+-		old = atomic_cmpxchg(&r->refs, val, new);
+-		if (old == val)
+-			break;
+-
+-		val = old;
+-	} while (1);
+-
+-	return !new;
+-}
+-
+-static inline bool refcount_dec_and_test(refcount_t *r)
+-{
+-	return refcount_sub_and_test(1, r);
+-}
+-
+-static inline void refcount_set(refcount_t *r, unsigned int n)
+-{
+-	atomic_set(&r->refs, n);
+-}
+-
+ #define netdev_lockdep_set_classes(dev)				\
+ {								\
+ 	static struct lock_class_key qdisc_tx_busylock_key;	\

@@ -16,7 +16,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-Virtualization
 [centos-azure-testing]
 name=CentOS-$releasever - Azure - Testing
 baseurl=http://buildlogs.centos.org/centos/$releasever/virt/$basearch/azure/
-gpgcheck=1
+gpgcheck=0
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-Virtualization
 

@@ -45,9 +45,10 @@ kerndir="${topdir}/linux-${kversion}.lis"
  sed -i 's/<asm\/mshyperv\.h>/"include\/asm\/mshyperv.h"/g'		${kerndir}/arch/x86/hyperv/mmu.c
  sed -i 's/<asm\/trace\/hyperv\.h>/"include\/asm\/trace\/hyperv.h"/g'	${kerndir}/arch/x86/hyperv/mmu.c
 
- # vclock_gettime.c and kvm_para.h
+ # vclock_gettime.c, kvm_para.h, hvm_host.h
  sed -i 's/<asm\/mshyperv\.h>/"..\/hyperv\/include\/asm\/mshyperv.h"/g'		${kerndir}/arch/x86/vdso/vclock_gettime.c
  sed -i 's/<asm\/hyperv\.h>/"..\/..\/..\/hyperv\/include\/asm\/hyperv.h"/g'	${kerndir}/arch/x86/include/uapi/asm/kvm_para.h
+ sed -i 's/<linux\/hyperv\.h>/"..\/..\/hyperv\/include\/linux\/hyperv.h"/g'	${kerndir}/arch/x86/include/asm/kvm_host.h
 
 
 # hv_vmbus
@@ -55,6 +56,7 @@ cp ${lisdir}/channel.c						${kerndir}/drivers/hv/channel.c
 cp ${lisdir}/channel_mgmt.c					${kerndir}/drivers/hv/channel_mgmt.c
 cp ${lisdir}/connection.c					${kerndir}/drivers/hv/connection.c
 cp ${lisdir}/hv_balloon.c					${kerndir}/drivers/hv/hv_balloon.c
+cp ${lisdir}/hv_trace_balloon.h					${kerndir}/drivers/hv/hv_trace_balloon.h
 cp ${lisdir}/hv.c						${kerndir}/drivers/hv/hv.c
 cp ${lisdir}/hv_fcopy.c						${kerndir}/drivers/hv/hv_fcopy.c
 cp ${lisdir}/hv_kvp.c						${kerndir}/drivers/hv/hv_kvp.c
@@ -77,6 +79,9 @@ cp ${lisdir}/hv_trace.h						${kerndir}/drivers/hv/hv_trace.h
  sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/g'		${kerndir}/drivers/hv/ms_hyperv_ext.c
  sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/g'		${kerndir}/drivers/hv/ms_hyperv_ext.c
 
+ # Fix hv_trace_balloon.h TRACE_INCLUDE_PATH
+ sed -i 's/TRACE_INCLUDE_PATH \./TRACE_INCLUDE_PATH ..\/..\/drivers\/hv/'	${kerndir}/drivers/hv/hv_trace_balloon.h
+
 sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/g'		${kerndir}/drivers/hv/channel_mgmt.c
 sed -i 's/lis\/asm\/hyperv\.h/asm\/hyperv\.h/g'			${kerndir}/drivers/hv/connection.c
 sed -i 's/lis\/asm\/mshyperv\.h/asm\/mshyperv\.h/g'		${kerndir}/drivers/hv/connection.c
@@ -95,6 +100,7 @@ done
 cp ${lisdir}/hyperv_net.h					${kerndir}/drivers/net/hyperv/hyperv_net.h
 cp ${lisdir}/netvsc_compat.h					${kerndir}/drivers/net/hyperv/netvsc_compat.h
 cp ${lisdir}/netvsc.c						${kerndir}/drivers/net/hyperv/netvsc.c
+cp ${lisdir}/netvsc_trace.h					${kerndir}/drivers/net/hyperv/netvsc_trace.h
 cp ${lisdir}/netvsc_drv.c					${kerndir}/drivers/net/hyperv/netvsc_drv.c
 cp ${lisdir}/rndis_filter.c					${kerndir}/drivers/net/hyperv/rndis_filter.c
 

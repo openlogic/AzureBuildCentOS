@@ -1,9 +1,9 @@
 #!/bin/bash
 
-lis="4.2.7"
-krepo="7.6.1810/os"
+lis="4.3.3"
+krepo="7.7.1908/updates"
 kversion=$( curl -s "http://vault.centos.org/${krepo}/Source/SPackages/" | \
-	    grep "kernel-3.10.0-957" | \
+	    grep "kernel-3.10.0-1062" | \
 	    sed 's/.*<a href="//' | sed 's/">.*//' | sort -V | tail -1 | sed 's/\.src\.rpm//' | sed 's/kernel-//' )
 kbasever=$( echo -n $kversion | sed -r 's/\.[0-9]*\.[0-9]*\.el[6-8]//' )
 
@@ -35,7 +35,6 @@ rm -rf rpmbuild 2>/dev/null
 mkdir -p ${topdir}/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 rpm -i ${topdir}/kernel-${kversion}.src.rpm 2>&1 | grep -v exist
 
-
 # Extract the kernel source
 echo "Setting up kernel source trees..."
 
@@ -62,8 +61,7 @@ cp patches/LIS-${lis}_linux-${kbasever}.patch ${topdir}/rpmbuild/SOURCES/
 
 
 # Copy Additional Patches
-cp patches/LIS-netvsc_get_stats64.patch ${topdir}/rpmbuild/SOURCES/
-cp patches/LIS-disable-hv_init.patch ${topdir}/rpmbuild/SOURCES/
+cp patches/LIS-hvcompat-refcount.patch ${topdir}/rpmbuild/SOURCES/
 
 
 # Patch spec file

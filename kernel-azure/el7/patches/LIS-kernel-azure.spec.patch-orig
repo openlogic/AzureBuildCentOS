@@ -1,8 +1,8 @@
---- ./kernel.spec.orig	2018-12-12 00:40:10.028175840 +0000
-+++ ./kernel.spec	2018-12-12 00:47:30.821373646 +0000
-@@ -3,7 +3,9 @@
+--- ./kernel.spec.orig	2019-02-05 22:07:28.891236674 +0000
++++ ./kernel.spec	2019-02-06 20:08:26.504738460 +0000
+@@ -5,7 +5,9 @@
  
- Summary: The Linux kernel
+ %define dist .el7
  
 -# % define buildid .local
 +# This is an Azure-tuned kernel variant
@@ -11,7 +11,7 @@
  
  # For a kernel released for public testing, released_kernel should be 1.
  # For internal testing builds during development, it should be 0.
-@@ -54,6 +56,12 @@
+@@ -56,6 +58,13 @@
  # kernel-abi-whitelists
  %define with_kernel_abi_whitelists %{?_with_kernel_abi_whitelists: 0} %{?!_with_kernel_abi_whitelists: 1}
  
@@ -20,11 +20,12 @@
 +%define with_tools 0
 +%define with_doc 0
 +%define with_kernel_abi_whitelists 0
++%define with_bpftool 0
 +
  # In RHEL, we always want the doc build failing to build to be a failure,
  # which means settings this to false.
  %define doc_build_fail false
-@@ -77,6 +85,9 @@
+@@ -79,6 +88,9 @@
  
  %define with_kabidw_base %{?_with_kabidw_base: 1} %{?!_with_kabidw_base: 0}
  
@@ -34,7 +35,7 @@
  # should we do C=1 builds with sparse
  %define with_sparse    %{?_with_sparse:       1} %{?!_with_sparse:       0}
  
-@@ -330,7 +341,8 @@
+@@ -332,7 +344,8 @@
  Release: %{pkg_release}
  # DO NOT CHANGE THE 'ExclusiveArch' LINE TO TEMPORARILY EXCLUDE AN ARCHITECTURE BUILD.
  # SET %%nobuildarches (ABOVE) INSTEAD
@@ -44,7 +45,7 @@
  ExclusiveOS: Linux
  
  %kernel_reqprovconf
-@@ -346,6 +358,7 @@
+@@ -348,6 +361,7 @@
  BuildRequires: openssl
  BuildRequires: hmaccalc
  BuildRequires: python-devel, newt-devel, perl(ExtUtils::Embed)
@@ -52,23 +53,21 @@
  %ifarch x86_64
  BuildRequires: pesign >= 0.109-4
  BuildRequires: elfutils-libelf-devel
-@@ -447,6 +460,9 @@
+@@ -449,6 +463,8 @@
  Patch1000: debrand-single-cpu.patch
  Patch1001: debrand-rh_taint.patch
  Patch1002: debrand-rh-i686-cpu.patch
-+Patch1003: LIS-4.2.7_linux-3.10.0-957.el7.patch
-+Patch1004: LIS-netvsc_get_stats64.patch
-+Patch1005: LIS-disable-hv_init.patch
++Patch1003: LIS.patch
++Patch1004: LIS-hvcompat-refcount.patch
  
  BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
  
-@@ -779,6 +795,9 @@
+@@ -781,6 +797,8 @@
  ApplyOptionalPatch debrand-single-cpu.patch
  ApplyOptionalPatch debrand-rh_taint.patch
  ApplyOptionalPatch debrand-rh-i686-cpu.patch
-+ApplyOptionalPatch LIS-4.2.7_linux-3.10.0-957.el7.patch
-+ApplyOptionalPatch LIS-netvsc_get_stats64.patch
-+ApplyOptionalPatch LIS-disable-hv_init.patch
++ApplyOptionalPatch LIS.patch
++ApplyOptionalPatch LIS-hvcompat-refcount.patch
  
  # Any further pre-build tree manipulations happen here.
  
