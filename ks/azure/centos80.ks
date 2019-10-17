@@ -44,23 +44,25 @@ skipx
 # Power down the machine after install
 poweroff
 
-# Partition clearing information
-#clearpart --all --initlabel
-# Bootloader and disk partitioning information
+# Partitioning and bootloader configuration
+# Note: biosboot and efi partitions are pre-created %pre to work around blivet issue
+# clearpart --all --initlabel
 zerombr
 bootloader --location=mbr --timeout=1
-#part biosboot --onpart=sda1
-part /boot/efi --fstype=vfat --size=500
+# part biosboot --onpart=sda14 --size=4
+part /boot/efi --onpart=sda15 --fstype=vfat --size=500
 part /boot --fstype="xfs" --size=500
 part / --fstype="xfs" --size=1 --grow --asprimary
 
-# Pre-create the biosboot partition
 %pre --log=/var/log/anaconda/pre-install.log --erroronfail
-
 #!/bin/bash
+
+# Pre-create the biosboot partition
 sgdisk --clear
-sgdisk --new=0:2048:4M /dev/sda
-sgdisk --typecode=1:EF02
+sgdisk --new=14:2048:10239 /dev/sda
+sgdisk --new=15:10240:500M /dev/sda
+sgdisk --typecode=14:EF02
+sgdisk --typecode=15:EF00
 
 %end
 
@@ -151,13 +153,10 @@ blacklist nouveau
 options nouveau modeset=0
 EOF
 
-# Enable BIOS/UEFI bootloaders
-  ## rhinstaller-blivet seems to not like --fstype="biosboot" above
-#  sgdisk --typecode=1:ef02 /dev/sda
-#  sgdisk --typecode=2:ef00 /dev/sda
+# Enable BIOS bootloader
+grub2-mkconfig -o /boot/grub2/grub.cfg
 grub2-install -d /usr/lib/grub/i386-pc/ /dev/sda
 #cat /etc/grub2-efi.cfg | sed -e 's/linuxefi/linux/' -e 's/initrdefi/initrd/' > /boot/grub2/grub.cfg
-grub2-mkconfig -o /boot/grub2/grub.cfg
 
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
