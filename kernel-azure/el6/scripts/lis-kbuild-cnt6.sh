@@ -1,6 +1,6 @@
 #!/bin/bash
 
-lis="4.2.7"
+lis="4.3.3"
 krepo="6.10"
 kversion=$( curl -s "http://vault.centos.org/${krepo}/updates/Source/SPackages/" | \
             grep "kernel-2.6.32-754" | \

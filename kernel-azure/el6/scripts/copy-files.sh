@@ -25,7 +25,7 @@ cp ${lisdir}/channel.c						${kerndir}/drivers/hv/channel.c
 cp ${lisdir}/channel_mgmt.c					${kerndir}/drivers/hv/channel_mgmt.c
 cp ${lisdir}/connection.c					${kerndir}/drivers/hv/connection.c
 cp ${lisdir}/hv_balloon.c					${kerndir}/drivers/hv/hv_balloon.c
-#cp ${lisdir}/hv_trace_balloon.h					${kerndir}/drivers/hv/hv_trace_balloon.h
+cp ${lisdir}/hv_trace_balloon.h					${kerndir}/drivers/hv/hv_trace_balloon.h
 cp ${lisdir}/hv.c						${kerndir}/drivers/hv/hv.c
 cp ${lisdir}/hv_fcopy.c						${kerndir}/drivers/hv/hv_fcopy.c
 cp ${lisdir}/hv_kvp.c						${kerndir}/drivers/hv/hv_kvp.c
@@ -63,7 +63,7 @@ for i in ${kerndir}/drivers/hv/*; do
 done
 
 # Fix drivers/hv/hv_trace_balloon.h
-#sed -i 's/#define TRACE_INCLUDE_PATH \./#define TRACE_INCLUDE_PATH \.\.\/\.\.\/drivers\/hv\//'	${kerndir}/drivers/hv/hv_trace_balloon.h
+sed -i 's/TRACE_INCLUDE_PATH \./TRACE_INCLUDE_PATH ..\/..\/drivers\/hv/'	 ${kerndir}/drivers/hv/hv_trace_balloon.h
 
 
 # hv_netvsc

@@ -1,7 +1,7 @@
 Name:		centos-release-azure
 Summary:	Yum configuration for CentOS Virt SIG Azure repo
 Version:        1.0
-Release:        1.el6.centos
+Release:        2.el6.centos
 
 Group:		System Environment/Base
 License:	GPLv2
@@ -33,6 +33,9 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/yum.repos.d/CentOS-Azure.repo
 
 %changelog
+* Thu Jul 26 2018 Stephen A. Zarkos <stephen.zarkos@microsoft.com> - 1.0-2.centos
+- Minor updates to .repo configuration
+
 * Fri Jun 22 2018 Stephen A. Zarkos <stephen.zarkos@microsoft.com> - 1.0-1.centos
 - Initial release
 
