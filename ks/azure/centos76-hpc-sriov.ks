@@ -241,26 +241,26 @@ cd /tmp/setup-gcc
 wget ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2
 tar -xvf gmp-6.1.0.tar.bz2
 cd ./gmp-6.1.0
-./configure --enable-cxx=detect && make -j && make install
+./configure --enable-cxx=detect && make -j$(nproc) && make install
 cd ..
 
 wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2
 tar -xvf mpfr-3.1.4.tar.bz2
 cd mpfr-3.1.4
-./configure && make -j && make install
+./configure && make -j$(nproc) && make install
 cd ..
 
 wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz
 tar -xvf mpc-1.0.3.tar.gz
 cd mpc-1.0.3
-./configure && make -j && make install
+./configure && make -j$(nproc) && make install
 cd ..
 
 # install gcc 8.2
 wget https://ftp.gnu.org/gnu/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz
 tar -xvf gcc-8.2.0.tar.gz
 cd gcc-8.2.0
-./configure --disable-multilib --prefix=/opt/gcc-8.2.0 && make -j && make install
+./configure --disable-multilib --prefix=/opt/gcc-8.2.0 && make -j$(nproc) && make install
 cd && rm -rf /tmp/setup-gcc
 
 
@@ -292,7 +292,7 @@ MV2_VERSION="2.3.2"
 wget http://mvapich.cse.ohio-state.edu/download/mvapich/mv2/mvapich2-${MV2_VERSION}.tar.gz
 tar -xvf mvapich2-${MV2_VERSION}.tar.gz
 cd mvapich2-${MV2_VERSION}
-./configure --prefix=${INSTALL_PREFIX}/mvapich2-${MV2_VERSION} --enable-g=none --enable-fast=yes && make -j && make install
+./configure --prefix=${INSTALL_PREFIX}/mvapich2-${MV2_VERSION} --enable-g=none --enable-fast=yes && make -j$(nproc) && make install
 cd ..
 
 # HPC-X v2.5.0
@@ -311,7 +311,7 @@ OMPI_VERSION="4.0.1"
 wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-${OMPI_VERSION}.tar.gz
 tar -xvf openmpi-${OMPI_VERSION}.tar.gz
 cd openmpi-${OMPI_VERSION}
-./configure --prefix=${INSTALL_PREFIX}/openmpi-${OMPI_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-mpirun-prefix-by-default --with-platform=contrib/platform/mellanox/optimized && make -j && make install
+./configure --prefix=${INSTALL_PREFIX}/openmpi-${OMPI_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-mpirun-prefix-by-default --with-platform=contrib/platform/mellanox/optimized && make -j$(nproc) && make install
 cd ..
 
 # MPICH 3.3.1
@@ -319,7 +319,7 @@ MPICH_VERSION="3.3.1"
 wget http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz
 tar -xvf mpich-${MPICH_VERSION}.tar.gz
 cd mpich-${MPICH_VERSION}
-./configure --prefix=${INSTALL_PREFIX}/mpich-${MPICH_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-g=none --enable-fast=yes --with-device=ch4:ucx   && make -j && make install
+./configure --prefix=${INSTALL_PREFIX}/mpich-${MPICH_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-g=none --enable-fast=yes --with-device=ch4:ucx   && make -j$(nproc) && make install
 cd ..
 
 # Intel MPI 2019 (update 5)
