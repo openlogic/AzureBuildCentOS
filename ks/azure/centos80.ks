@@ -46,7 +46,6 @@ poweroff
 
 # Partitioning and bootloader configuration
 # Note: biosboot and efi partitions are pre-created %pre to work around blivet issue
-# clearpart --all --initlabel
 zerombr
 bootloader --location=mbr --timeout=1
 # part biosboot --onpart=sda14 --size=4
@@ -57,7 +56,7 @@ part / --fstype="xfs" --size=1 --grow --asprimary
 %pre --log=/var/log/anaconda/pre-install.log --erroronfail
 #!/bin/bash
 
-# Pre-create the biosboot partition
+# Pre-create the biosboot and EFI partitions
 sgdisk --clear /dev/sda
 sgdisk --new=14:2048:10239 /dev/sda
 sgdisk --new=15:10240:500M /dev/sda
@@ -154,9 +153,14 @@ options nouveau modeset=0
 EOF
 
 # Enable BIOS bootloader
-grub2-mkconfig -o /boot/grub2/grub.cfg
-grub2-install -d /usr/lib/grub/i386-pc/ /dev/sda
-#cat /etc/grub2-efi.cfg | sed -e 's/linuxefi/linux/' -e 's/initrdefi/initrd/' > /boot/grub2/grub.cfg
+grub2-install --target=i386-pc --directory=/usr/lib/grub/i386-pc/ /dev/sda
+grub2-mkconfig --output=/boot/grub2/grub.cfg
+
+ # Fix grub.cfg to remove EFI entries, otherwise "boot=" is not set correctly and blscfg fails
+ EFI_ID=`blkid --match-tag UUID --output value /dev/sda15`
+ BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
+ sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
+ sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
 
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
