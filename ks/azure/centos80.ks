@@ -113,9 +113,6 @@ centos-release
 cloud-utils-growpart
 gdisk
 
-# add insight-clients
-insights-client
-
 %end
 
 %post --log=/var/log/anaconda/post-install.log --erroronfail
