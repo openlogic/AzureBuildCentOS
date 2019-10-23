@@ -154,6 +154,8 @@ options nouveau modeset=0
 EOF
 
 # Enable BIOS bootloader
+rm -f /boot/grub2/grubenv
+cp /boot/efi/EFI/centos/grubenv /boot/grub2/grubenv
 grub2-install --target=i386-pc --directory=/usr/lib/grub/i386-pc/ /dev/sda
 grub2-mkconfig --output=/boot/grub2/grub.cfg
 
