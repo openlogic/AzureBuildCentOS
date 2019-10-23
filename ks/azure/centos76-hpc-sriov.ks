@@ -66,7 +66,6 @@ poweroff
 %packages
 @base
 @console-internet
-@development
 ntp
 cifs-utils
 sudo
@@ -76,27 +75,7 @@ WALinuxAgent
 hypervkvpd
 azure-repo-svc
 -dracut-config-rescue
-selinux-policy-devel
-kernel-headers
 nfs-utils
-numactl
-numactl-devel
-libxml2-devel
-byacc
-environment-modules
-python-devel
-python-setuptools
-gtk2
-atk
-cairo
-tcl
-tk
-m4
-glibc-devel
-glibc-static
-libudev-devel
-binutils
-binutils-devel
 %end
 
 %post --log=/var/log/anaconda/post-install.log
@@ -194,233 +173,13 @@ SUBSYSTEM=="net", DRIVERS=="hv_pci", ACTION=="add", ENV{NM_UNMANAGED}="1"
 
 EOF
 
-# Disable some unneeded services by default (administrators can re-enable if desired)
-systemctl disable wpa_supplicant
-systemctl disable abrtd
-systemctl disable firewalld
-
-# Update memory limits
-cat << EOF >> /etc/security/limits.conf
-*               hard    memlock         unlimited
-*               soft    memlock         unlimited
-*               soft    nofile          65535
-*               hard    nofile          65535
-EOF
-
-# Disable GSS proxy
-sed -i 's/GSS_USE_PROXY="yes"/GSS_USE_PROXY="no"/g' /etc/sysconfig/nfs
-
-# Enable reclaim mode
-echo "vm.zone_reclaim_mode = 1" >> /etc/sysctl.conf
-sysctl -p
-
-# Install Mellanox OFED
-mkdir -p /tmp/mlnxofed
-cd /tmp/mlnxofed
-wget https://www.mellanox.com/downloads/ofed/MLNX_OFED-4.7-1.0.0.1/MLNX_OFED_LINUX-4.7-1.0.0.1-rhel7.6-x86_64.tgz
-tar zxvf MLNX_OFED_LINUX-4.7-1.0.0.1-rhel7.6-x86_64.tgz
-
-KERNEL=( $(rpm -q kernel | sed 's/kernel\-//g') )
-KERNEL=${KERNEL[-1]}
-yum install -y kernel-devel-${KERNEL}
-./MLNX_OFED_LINUX-4.7-1.0.0.1-rhel7.6-x86_64/mlnxofedinstall --kernel $KERNEL --kernel-sources /usr/src/kernels/${KERNEL} --add-kernel-support --skip-repo
-cd && rm -rf /tmp/mlnxofed
-
-# Configure WALinuxAgent
-sed -i -e 's/# OS.EnableRDMA=y/OS.EnableRDMA=y/g' /etc/waagent.conf
-sed -i -e 's/CGroups.EnforceLimits=n/CGroups.EnforceLimits=y/g' /etc/waagent.conf
-systemctl enable waagent
-
-# Default path
-LD_LIBRARY_PATH=${LD_LIBRARY_PATH-}:/usr/lib64:/usr/local/lib
-
-# Install gcc 8.2
-mkdir -p /tmp/setup-gcc
-cd /tmp/setup-gcc
-
-wget ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2
-tar -xvf gmp-6.1.0.tar.bz2
-cd ./gmp-6.1.0
-./configure --enable-cxx=detect && make -j$(nproc) && make install
-cd ..
-
-wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2
-tar -xvf mpfr-3.1.4.tar.bz2
-cd mpfr-3.1.4
-./configure && make -j$(nproc) && make install
-cd ..
-
-wget ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz
-tar -xvf mpc-1.0.3.tar.gz
-cd mpc-1.0.3
-./configure && make -j$(nproc) && make install
-cd ..
-
-# install gcc 8.2
-wget https://ftp.gnu.org/gnu/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz
-tar -xvf gcc-8.2.0.tar.gz
-cd gcc-8.2.0
-./configure --disable-multilib --prefix=/opt/gcc-8.2.0 && make -j$(nproc) && make install
-cd && rm -rf /tmp/setup-gcc
-
-
-cat << EOF >> /usr/share/Modules/modulefiles/gcc-8.2.0
-#%Module 1.0
-#
-#  GCC 8.2.0
-#
-
-prepend-path    PATH            /opt/gcc-8.2.0/bin
-prepend-path    LD_LIBRARY_PATH /opt/gcc-8.2.0/lib64
-setenv          CC              /opt/gcc-8.2.0/bin/gcc
-setenv          GCC             /opt/gcc-8.2.0/bin/gcc
-EOF
-
-# Load gcc-8.2.0
-export PATH=/opt/gcc-8.2.0/bin:$PATH
-export LD_LIBRARY_PATH=/opt/gcc-8.2.0/lib64:$LD_LIBRARY_PATH
-set CC=/opt/gcc-8.2.0/bin/gcc
-set GCC=/opt/gcc-8.2.0/bin/gcc
-
-# Install MPIs
-INSTALL_PREFIX=/opt
-mkdir -p /tmp/mpi
-cd /tmp/mpi
-
-# MVAPICH2 2.3.2
-MV2_VERSION="2.3.2"
-wget http://mvapich.cse.ohio-state.edu/download/mvapich/mv2/mvapich2-${MV2_VERSION}.tar.gz
-tar -xvf mvapich2-${MV2_VERSION}.tar.gz
-cd mvapich2-${MV2_VERSION}
-./configure --prefix=${INSTALL_PREFIX}/mvapich2-${MV2_VERSION} --enable-g=none --enable-fast=yes && make -j$(nproc) && make install
-cd ..
-
-# HPC-X v2.5.0
-HPCX_VERSION="v2.5.0"
-cd ${INSTALL_PREFIX}
-wget http://www.mellanox.com/downloads/hpc/hpc-x/v2.6/hpcx-v2.5.0-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64.tbz
-tar -xvf hpcx-v2.5.0-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64.tbz
-HPCX_PATH=${INSTALL_PREFIX}/hpcx-v2.5.0-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64
-HCOLL_PATH=${HPCX_PATH}/hcoll
-UCX_PATH=${HPCX_PATH}/ucx
-rm -rf hpcx-v2.5.0-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64.tbz
-cd /tmp/mpi
-
-# OpenMPI 4.0.1
-OMPI_VERSION="4.0.1"
-wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-${OMPI_VERSION}.tar.gz
-tar -xvf openmpi-${OMPI_VERSION}.tar.gz
-cd openmpi-${OMPI_VERSION}
-./configure --prefix=${INSTALL_PREFIX}/openmpi-${OMPI_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-mpirun-prefix-by-default --with-platform=contrib/platform/mellanox/optimized && make -j$(nproc) && make install
-cd ..
-
-# MPICH 3.3.1
-MPICH_VERSION="3.3.1"
-wget http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz
-tar -xvf mpich-${MPICH_VERSION}.tar.gz
-cd mpich-${MPICH_VERSION}
-./configure --prefix=${INSTALL_PREFIX}/mpich-${MPICH_VERSION} --with-ucx=${UCX_PATH} --with-hcoll=${HCOLL_PATH} --enable-g=none --enable-fast=yes --with-device=ch4:ucx   && make -j$(nproc) && make install
-cd ..
-
-# Intel MPI 2019 (update 5)
-IMPI_VERSION="2019.5.281"
-CFG="IntelMPI-v2019.x-silent.cfg"
-wget http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/15838/l_mpi_${IMPI_VERSION}.tgz
-wget https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/${CFG}
-tar -xvf l_mpi_${IMPI_VERSION}.tgz
-cd l_mpi_${IMPI_VERSION}
-./install.sh --silent /tmp/mpi/${CFG}
-cd ..
-
-cd && rm -rf /tmp/mpi
-
-# Setup module files for MPIs
-mkdir -p /usr/share/Modules/modulefiles/mpi/
-
-# HPC-X
-cat << EOF >> /usr/share/Modules/modulefiles/mpi/hpcx-${HPCX_VERSION}
-#%Module 1.0
-#
-#  HPCx ${HPCX_VERSION}
-#
-conflict        mpi
-module load /opt/hpcx-${HPCX_VERSION}-gcc-MLNX_OFED_LINUX-4.7-1.0.0.1-redhat7.6-x86_64/modulefiles/hpcx
-EOF
-
-# MPICH
-cat << EOF >> /usr/share/Modules/modulefiles/mpi/mpich-${MPICH_VERSION}
-#%Module 1.0
-#
-#  MPICH ${MPICH_VERSION}
-#
-conflict        mpi
-prepend-path    PATH            /opt/mpich-${MPICH_VERSION}/bin
-prepend-path    LD_LIBRARY_PATH /opt/mpich-${MPICH_VERSION}/lib
-prepend-path    MANPATH         /opt/mpich-${MPICH_VERSION}/share/man
-setenv          MPI_BIN         /opt/mpich-${MPICH_VERSION}/bin
-setenv          MPI_INCLUDE     /opt/mpich-${MPICH_VERSION}/include
-setenv          MPI_LIB         /opt/mpich-${MPICH_VERSION}/lib
-setenv          MPI_MAN         /opt/mpich-${MPICH_VERSION}/share/man
-setenv          MPI_HOME        /opt/mpich-${MPICH_VERSION}
-EOF
-
-# MVAPICH2
-cat << EOF >> /usr/share/Modules/modulefiles/mpi/mvapich2-${MV2_VERSION}
-#%Module 1.0
-#
-#  MVAPICH2 ${MV2_VERSION}
-#
-conflict        mpi
-prepend-path    PATH            /opt/mvapich2-${MV2_VERSION}/bin
-prepend-path    LD_LIBRARY_PATH /opt/mvapich2-${MV2_VERSION}/lib
-prepend-path    MANPATH         /opt/mvapich2-${MV2_VERSION}/share/man
-setenv          MPI_BIN         /opt/mvapich2-${MV2_VERSION}/bin
-setenv          MPI_INCLUDE     /opt/mvapich2-${MV2_VERSION}/include
-setenv          MPI_LIB         /opt/mvapich2-${MV2_VERSION}/lib
-setenv          MPI_MAN         /opt/mvapich2-${MV2_VERSION}/share/man
-setenv          MPI_HOME        /opt/mvapich2-${MV2_VERSION}
-EOF
-
-# OpenMPI
-cat << EOF >> /usr/share/Modules/modulefiles/mpi/openmpi-${OMPI_VERSION}
-#%Module 1.0
-#
-#  OpenMPI ${OMPI_VERSION}
-#
-conflict        mpi
-prepend-path    PATH            /opt/openmpi-${OMPI_VERSION}/bin
-prepend-path    LD_LIBRARY_PATH /opt/openmpi-${OMPI_VERSION}/lib
-prepend-path    MANPATH         /opt/openmpi-${OMPI_VERSION}/share/man
-setenv          MPI_BIN         /opt/openmpi-${OMPI_VERSION}/bin
-setenv          MPI_INCLUDE     /opt/openmpi-${OMPI_VERSION}/include
-setenv          MPI_LIB         /opt/openmpi-${OMPI_VERSION}/lib
-setenv          MPI_MAN         /opt/openmpi-${OMPI_VERSION}/share/man
-setenv          MPI_HOME        /opt/openmpi-${OMPI_VERSION}
-EOF
-
-#IntelMPI
-cat << EOF >> /usr/share/Modules/modulefiles/mpi/impi_${IMPI_VERSION}
-#%Module 1.0
-#
-#  Intel MPI ${IMPI_VERSION}
-#
-conflict        mpi
-prepend-path    PATH            /opt/intel/impi/${IMPI_VERSION}/intel64/bin
-prepend-path    LD_LIBRARY_PATH /opt/intel/impi/${IMPI_VERSION}/intel64/lib
-prepend-path    MANPATH         /opt/intel/impi/${IMPI_VERSION}/man
-setenv          MPI_BIN         /opt/intel/impi/${IMPI_VERSION}/intel64/bin
-setenv          MPI_INCLUDE     /opt/intel/impi/${IMPI_VERSION}/intel64/include
-setenv          MPI_LIB         /opt/intel/impi/${IMPI_VERSION}/intel64/lib
-setenv          MPI_MAN         /opt/intel/impi/${IMPI_VERSION}/man
-setenv          MPI_HOME        /opt/intel/impi/${IMPI_VERSION}/intel64
-EOF
-
-# Create symlinks for modulefiles
-ln -s /usr/share/Modules/modulefiles/mpi/hpcx-${HPCX_VERSION} /usr/share/Modules/modulefiles/mpi/hpcx
-ln -s /usr/share/Modules/modulefiles/mpi/mpich-${MPICH_VERSION} /usr/share/Modules/modulefiles/mpi/mpich
-ln -s /usr/share/Modules/modulefiles/mpi/mvapich2-${MV2_VERSION} /usr/share/Modules/modulefiles/mpi/mvapich2
-ln -s /usr/share/Modules/modulefiles/mpi/openmpi-${OMPI_VERSION} /usr/share/Modules/modulefiles/mpi/openmpi
-ln -s /usr/share/Modules/modulefiles/mpi/impi_${IMPI_VERSION} /usr/share/Modules/modulefiles/mpi/impi
+cd /tmp
+CENTOS_HPC_VERSION="centos-7.6-hpc-20191023"
+wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
+tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
+cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.6-hpc
+./install.sh
+cd && rm -rf /tmp/azhpc-images-${CENTOS_HPC_VERSION}
 
 # Modify yum
 echo "http_caching=packages" >> /etc/yum.conf
