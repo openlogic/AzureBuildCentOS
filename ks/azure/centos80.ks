@@ -179,8 +179,9 @@ echo -e "\nadd_drivers+=\"hv_vmbus hv_netvsc hv_storvsc\""	>> /etc/dracut.conf.d
 kversion=$( rpm -q kernel | sed 's/kernel\-//' )
 dracut -v -f "/boot/initramfs-${kversion}.img" "$kversion"
 
-# Enable SSH keepalive
+# Enable SSH keepalive / Disable root SSH login
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
+sed -i 's/^PermitRootLogin.*/#PermitRootLogin no/g' /etc/ssh/sshd_config
 
 # Configure network
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
