@@ -134,8 +134,14 @@ gdisk
 # Disable the root account
 usermod root -p '!!'
 
-# Set OL repos
-#curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
+# Set Base and AppStream repos to the Azure mirrors
+sed -i 's/mirror.centos.org/olcentgbl.trafficmanager.net/'	/etc/yum.repos.d/CentOS-AppStream.repo
+sed -i 's/^mirrorlist/#mirrorlist/'							/etc/yum.repos.d/CentOS-AppStream.repo
+sed -i 's/^#baseurl/baseurl/'								/etc/yum.repos.d/CentOS-AppStream.repo
+
+sed -i 's/mirror.centos.org/olcentgbl.trafficmanager.net/'	/etc/yum.repos.d/CentOS-Base.repo
+sed -i 's/^mirrorlist/#mirrorlist/'							/etc/yum.repos.d/CentOS-Base.repo
+sed -i 's/^#baseurl/baseurl/'								/etc/yum.repos.d/CentOS-Base.repo
 
 # Import CentOS public key
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
@@ -166,8 +172,8 @@ options nouveau modeset=0
 EOF
 
 # Ensure Hyper-V drivers are built into initramfs
-echo '# Ensure Hyper-V drivers are built into initramfs' >> /etc/dracut.conf.d/azure.conf
-echo -e "\nadd_drivers+=\"hv_vmbus hv_netvsc hv_storvsc\"" >> /etc/dracut.conf.d/azure.conf
+echo '# Ensure Hyper-V drivers are built into initramfs'	>> /etc/dracut.conf.d/azure.conf
+echo -e "\nadd_drivers+=\"hv_vmbus hv_netvsc hv_storvsc\""	>> /etc/dracut.conf.d/azure.conf
 kversion=$( rpm -q kernel | sed 's/kernel\-//' )
 dracut -v -f "/boot/initramfs-${kversion}.img" "$kversion"
 
