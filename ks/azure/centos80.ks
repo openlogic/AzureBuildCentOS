@@ -213,7 +213,8 @@ EOF
 echo -e "\nrefclock PHC /dev/ptp0 poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
 
 # Enable DNS cache
-sed -i 's/hosts:\s*files dns myhostname/hosts:      files resolve dns myhostname/' /etc/nsswitch.conf
+# Comment this by default due to "DNSSEC validation failed" issues
+#sed -i 's/hosts:\s*files dns myhostname/hosts:      files resolve dns myhostname/' /etc/nsswitch.conf
 
 # Update dnf configuration
 echo "http_caching=packages" >> /etc/dnf/dnf.conf
