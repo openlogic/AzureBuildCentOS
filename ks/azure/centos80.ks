@@ -166,7 +166,8 @@ options nouveau modeset=0
 EOF
 
 # Ensure Hyper-V drivers are built into initramfs
-echo -e "\nadd_drivers+=\"hv_vmbus hv_netvsc hv_storvsc\"" >> /etc/dracut.conf
+echo '# Ensure Hyper-V drivers are built into initramfs' >> /etc/dracut.conf.d/azure.conf
+echo -e "\nadd_drivers+=\"hv_vmbus hv_netvsc hv_storvsc\"" >> /etc/dracut.conf.d/azure.conf
 kversion=$( rpm -q kernel | sed 's/kernel\-//' )
 dracut -v -f "/boot/initramfs-${kversion}.img" "$kversion"
 
