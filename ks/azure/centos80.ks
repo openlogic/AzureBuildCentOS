@@ -87,6 +87,8 @@ openssh-server
 kernel
 dnf-utils
 rng-tools
+cracklib
+cracklib-dicts
 centos-release
 
 # pull firmware packages out
