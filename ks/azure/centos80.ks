@@ -135,13 +135,13 @@ gdisk
 usermod root -p '!!'
 
 # Set Base and AppStream repos to the Azure mirrors
-sed -i 's/mirror.centos.org/olcentgbl.trafficmanager.net/'	/etc/yum.repos.d/CentOS-AppStream.repo
-sed -i 's/^mirrorlist/#mirrorlist/'							/etc/yum.repos.d/CentOS-AppStream.repo
-sed -i 's/^#baseurl/baseurl/'								/etc/yum.repos.d/CentOS-AppStream.repo
+sed -i 's/mirror.centos.org/olcentgbl.trafficmanager.net/'  /etc/yum.repos.d/CentOS-AppStream.repo
+sed -i 's/^mirrorlist/#mirrorlist/'                         /etc/yum.repos.d/CentOS-AppStream.repo
+sed -i 's/^#baseurl/baseurl/'                               /etc/yum.repos.d/CentOS-AppStream.repo
 
-sed -i 's/mirror.centos.org/olcentgbl.trafficmanager.net/'	/etc/yum.repos.d/CentOS-Base.repo
-sed -i 's/^mirrorlist/#mirrorlist/'							/etc/yum.repos.d/CentOS-Base.repo
-sed -i 's/^#baseurl/baseurl/'								/etc/yum.repos.d/CentOS-Base.repo
+sed -i 's/mirror.centos.org/olcentgbl.trafficmanager.net/'  /etc/yum.repos.d/CentOS-Base.repo
+sed -i 's/^mirrorlist/#mirrorlist/'                         /etc/yum.repos.d/CentOS-Base.repo
+sed -i 's/^#baseurl/baseurl/'                               /etc/yum.repos.d/CentOS-Base.repo
 
 # Import CentOS public key
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
