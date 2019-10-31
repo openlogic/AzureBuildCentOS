@@ -72,8 +72,8 @@ sgdisk --typecode=15:EF00 /dev/sda
 
 %packages
 WALinuxAgent
-@base
-@core
+@^minimal-environment
+@standard
 #@container-tools
 chrony
 sudo
