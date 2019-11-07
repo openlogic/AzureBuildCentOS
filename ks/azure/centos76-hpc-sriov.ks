@@ -73,7 +73,6 @@ python-pyasn1
 parted
 WALinuxAgent
 hypervkvpd
-azure-repo-svc
 -dracut-config-rescue
 nfs-utils
 %end
