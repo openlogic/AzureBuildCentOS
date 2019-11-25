@@ -156,8 +156,7 @@ echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no -
 sed -i 's/^GRUB_TERMINAL_OUTPUT=".*"$/GRUB_TERMINAL="serial console"/g' /etc/default/grub
 
 # Enable BIOS bootloader
-rm -f /boot/grub2/grubenv
-cp /boot/efi/EFI/centos/grubenv /boot/grub2/grubenv
+grub2-mkconfig --output /etc/grub2-efi.cfg
 grub2-install --target=i386-pc --directory=/usr/lib/grub/i386-pc/ /dev/sda
 grub2-mkconfig --output=/boot/grub2/grub.cfg
 
@@ -166,6 +165,8 @@ grub2-mkconfig --output=/boot/grub2/grub.cfg
  BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
  sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
  sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
+ sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/redhat/grubenv|' /boot/grub2/grub.cfg
+ sed -i '/^### BEGIN \/etc\/grub.d\/30_uefi/,/^### END \/etc\/grub.d\/30_uefi/{/^### BEGIN \/etc\/grub.d\/30_uefi/!{/^### END \/etc\/grub.d\/30_uefi/!d}}' /boot/grub2/grub.cfg
 
 # Blacklist the nouveau driver
 cat << EOF > /etc/modprobe.d/blacklist-nouveau.conf
