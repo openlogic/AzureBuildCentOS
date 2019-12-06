@@ -90,6 +90,7 @@ rng-tools
 cracklib
 cracklib-dicts
 centos-release
+python3
 
 # pull firmware packages out
 -aic94xx-firmware
