@@ -19,9 +19,9 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url="http://olcentchan.chinacloudapp.cn/centos/8.0.1905/BaseOS/x86_64/os/"
-repo --name "BaseOS" --baseurl="http://olcentchan.chinacloudapp.cn/centos/8.0.1905/BaseOS/x86_64/os/" --cost=100
-repo --name="AppStream" --baseurl="http://olcentchan.chinacloudapp.cn/centos/8.0.1905/AppStream/x86_64/os/" --cost=100
+url --url="http://olcentgbl.trafficmanager.net/centos/8.0.1905/BaseOS/x86_64/os/"
+repo --name "BaseOS" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.0.1905/BaseOS/x86_64/os/" --cost=100
+repo --name="AppStream" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.0.1905/AppStream/x86_64/os/" --cost=100
 
 # Root password
 rootpw --plaintext "to_be_disabled"
