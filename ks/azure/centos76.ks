@@ -149,6 +149,9 @@ cat << EOF > /etc/modprobe.d/blacklist-nouveau.conf
 blacklist nouveau
 options nouveau modeset=0
 EOF
+cat << EOF > /etc/modprobe.d/blacklist-floppy.conf
+blacklist floppy
+EOF
 
 # Ensure Hyper-V drivers are built into initramfs
 echo '# Ensure Hyper-V drivers are built into initramfs'	>> /etc/dracut.conf.d/azure.conf
