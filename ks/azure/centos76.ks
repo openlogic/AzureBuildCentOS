@@ -82,7 +82,7 @@ parted
 WALinuxAgent
 hypervkvpd
 gdisk
-cloud-init
+#cloud-init
 cloud-utils-growpart
 azure-repo-svc
 -dracut-config-rescue
@@ -237,24 +237,28 @@ curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szark
 # Set tuned profile
 echo "virtual-guest" > /etc/tuned/active_profile
 
-# Disable provisioning and ephemeral disk handling in waagent.conf
-sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
-sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
-sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
-sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
+# Disable cloud-init config ... for now [RDA 200213]
+if [ 0 = 1 ]
+then
+	# Disable provisioning and ephemeral disk handling in waagent.conf
+	sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
+	sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
+	sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
+	sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
 
-# Update the default cloud.cfg to move disk setup to the beginning of init phase
-sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
-sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
-sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
-sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
-cloud-init clean
+	# Update the default cloud.cfg to move disk setup to the beginning of init phase
+	sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
+	sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
+	sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
+	sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
+	cloud-init clean
 
-# Enable the Azure datasource
-cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
-# This configuration file is used to connect to the Azure DS sooner
-datasource_list: [ Azure ]
-EOF
+	# Enable the Azure datasource
+	cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+	# This configuration file is used to connect to the Azure DS sooner
+	datasource_list: [ Azure ]
+	EOF
+fi
 
 if [[ -f /mnt/resource/swapfile ]]; then
     echo removing swapfile
