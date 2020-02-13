@@ -81,12 +81,11 @@ python-pyasn1
 parted
 WALinuxAgent
 hypervkvpd
+gdisk
+#cloud-init
+cloud-utils-growpart
 azure-repo-svc
 -dracut-config-rescue
-
-# enable rootfs resize on boot
-cloud-utils-growpart
-gdisk
 
 %end
 
@@ -97,9 +96,12 @@ gdisk
 # Disable the root account
 usermod root -p '!!'
 
+# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
 # Set OL repos
 curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+sed -i -e 's/$releasever/7.7.1908/' /etc/yum.repos.d/CentOS-Base.repo
+sed -i -e 's/$releasever/7.7.1908/' /etc/yum.repos.d/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
@@ -146,6 +148,9 @@ majorVersion=$(rpm -E %{rhel})
 cat << EOF > /etc/modprobe.d/blacklist-nouveau.conf
 blacklist nouveau
 options nouveau modeset=0
+EOF
+cat << EOF > /etc/modprobe.d/blacklist-floppy.conf
+blacklist floppy
 EOF
 
 # Ensure Hyper-V drivers are built into initramfs
@@ -224,8 +229,42 @@ systemctl disable abrtd
 echo "http_caching=packages" >> /etc/yum.conf
 yum clean all
 
+# Download these again after the HPC build stage so we can recreate a previous point release without current major version updates
+# Set OL repos
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
+curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+
 # Set tuned profile
 echo "virtual-guest" > /etc/tuned/active_profile
+
+# Disable cloud-init config ... for now [RDA 200213]
+if [ 0 = 1 ]
+then
+	# Disable provisioning and ephemeral disk handling in waagent.conf
+	sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
+	sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
+	sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
+	sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
+
+	# Update the default cloud.cfg to move disk setup to the beginning of init phase
+	sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
+	sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
+	sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
+	sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
+	cloud-init clean
+
+	# Enable the Azure datasource
+	cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+	# This configuration file is used to connect to the Azure DS sooner
+	datasource_list: [ Azure ]
+	EOF
+fi
+
+if [[ -f /mnt/resource/swapfile ]]; then
+    echo removing swapfile
+    swapoff /mnt/resource/swapfile
+    rm /mnt/resource/swapfile -f
+fi
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
