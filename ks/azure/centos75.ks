@@ -20,7 +20,10 @@ network --bootproto=dhcp
 
 # Use network installation
 url --url=http://olcentgbl.trafficmanager.net/centos/7.5.1804/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.5.1804/updates/x86_64/
+repo --name="os" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.5.1804/os/x86_64/" --cost=100
+repo --name="updates" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.5.1804/updates/x86_64/" --cost=100
+repo --name="extras" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.5.1804/extras/x86_64/" --cost=100
+repo --name="openlogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/"
 
 # Root password
 rootpw --plaintext "to_be_disabled"
@@ -31,21 +34,26 @@ services --enabled="sshd,waagent,dnsmasq,NetworkManager"
 # System timezone
 timezone Etc/UTC --isUtc
 
-# Partition clearing information
-clearpart --all --initlabel
-
-# Clear the MBR
+# Partitioning and bootloader configuration
+# Note: biosboot and efi partitions are pre-created %pre to work around blivet issue
 zerombr
-
-# Disk partitioning information
+bootloader --location=mbr --timeout=1
+# part biosboot --onpart=sda14 --size=4
+part /boot/efi --onpart=sda15 --fstype=vfat --size=500
 part /boot --fstype="xfs" --size=500
 part / --fstype="xfs" --size=1 --grow --asprimary
 
-# System bootloader configuration
-bootloader --location=mbr --timeout=1
+%pre --log=/var/log/anaconda/pre-install.log --erroronfail
+#!/bin/bash
 
-# Add OpenLogic repo
-repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/
+# Pre-create the biosboot and EFI partitions
+sgdisk --clear /dev/sda
+sgdisk --new=14:2048:10239 /dev/sda
+sgdisk --new=15:10240:500M /dev/sda
+sgdisk --typecode=14:EF02 /dev/sda
+sgdisk --typecode=15:EF00 /dev/sda
+
+%end
 
 # Firewall configuration
 firewall --disabled
@@ -73,7 +81,10 @@ python-pyasn1
 parted
 WALinuxAgent
 hypervkvpd
-azure-repo-svc 
+gdisk
+#cloud-init
+cloud-utils-growpart
+azure-repo-svc
 -dracut-config-rescue
 
 %end
@@ -85,9 +96,12 @@ azure-repo-svc
 # Disable the root account
 usermod root -p '!!'
 
+# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
 # Set OL repos
 curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+sed -i -e 's/$releasever/7.5.1804/' /etc/yum.repos.d/CentOS-Base.repo
+sed -i -e 's/$releasever/7.5.1804/' /etc/yum.repos.d/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
@@ -101,14 +115,49 @@ sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 
 echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"' >> /etc/default/grub
 sed -i 's/^GRUB_TERMINAL_OUTPUT=".*"$/GRUB_TERMINAL="serial console"/g' /etc/default/grub
 
+# Enable BIOS bootloader
+grub2-mkconfig --output /etc/grub2-efi.cfg
+grub2-install --target=i386-pc --directory=/usr/lib/grub/i386-pc/ /dev/sda
+grub2-mkconfig --output=/boot/grub2/grub.cfg
+
+# Grab major version number so we can properly adjust grub config.
+# Should work on both RHEL and CentOS reliably
+majorVersion=$(rpm -E %{rhel})
+
+ # Fix grub.cfg to remove EFI entries, otherwise "boot=" is not set correctly and blscfg fails
+ [ "$majorVersion" = "7" ] && {
+   EFI_ID=`blkid -s UUID -o value /dev/sda15`
+   EFI_ID=`blkid -s UUID -o value /dev/sda1`
+   sed -i 's|$prefix/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+   sed -i 's|load_env|load_env -f (hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+
+   # Required for CentOS 7.x due to no blscfg: https://bugzilla.redhat.com/show_bug.cgi?id=1570991#c6
+   #cat /etc/grub2-efi.cfg | sed -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' > /boot/grub2/grub.cfg
+   sed -i -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' /boot/grub2/grub.cfg
+ }
+ [ "$majorVersion" = "8" ] && {
+   EFI_ID=`blkid --match-tag UUID --output value /dev/sda15`
+   BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
+   sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+ }
+ sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
+ sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
+ sed -i '/^### BEGIN \/etc\/grub.d\/30_uefi/,/^### END \/etc\/grub.d\/30_uefi/{/^### BEGIN \/etc\/grub.d\/30_uefi/!{/^### END \/etc\/grub.d\/30_uefi/!d}}' /boot/grub2/grub.cfg
+
 # Blacklist the nouveau driver
 cat << EOF > /etc/modprobe.d/blacklist-nouveau.conf
 blacklist nouveau
 options nouveau modeset=0
 EOF
+cat << EOF > /etc/modprobe.d/blacklist-floppy.conf
+blacklist floppy
+EOF
 
-# Rebuild grub.cfg
-grub2-mkconfig -o /boot/grub2/grub.cfg
+# Ensure Hyper-V drivers are built into initramfs
+echo '# Ensure Hyper-V drivers are built into initramfs'	>> /etc/dracut.conf.d/azure.conf
+echo -e "\nadd_drivers+=\"hv_vmbus hv_netvsc hv_storvsc\""	>> /etc/dracut.conf.d/azure.conf
+kversion=$( rpm -q kernel | sed 's/kernel\-//' )
+dracut -v -f "/boot/initramfs-${kversion}.img" "$kversion"
 
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
@@ -178,8 +227,42 @@ systemctl disable abrtd
 echo "http_caching=packages" >> /etc/yum.conf
 yum clean all
 
+# Download these again after the HPC build stage so we can recreate a previous point release without current major version updates
+# Set OL repos
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
+curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+
 # Set tuned profile
 echo "virtual-guest" > /etc/tuned/active_profile
+
+# Disable cloud-init config ... for now [RDA 200213]
+if [ 0 = 1 ]
+then
+	# Disable provisioning and ephemeral disk handling in waagent.conf
+	sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
+	sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
+	sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
+	sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
+
+	# Update the default cloud.cfg to move disk setup to the beginning of init phase
+	sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
+	sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
+	sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
+	sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
+	cloud-init clean
+
+	# Enable the Azure datasource
+	cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+	# This configuration file is used to connect to the Azure DS sooner
+	datasource_list: [ Azure ]
+	EOF
+fi
+
+if [[ -f /mnt/resource/swapfile ]]; then
+    echo removing swapfile
+    swapoff /mnt/resource/swapfile
+    rm /mnt/resource/swapfile -f
+fi
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
