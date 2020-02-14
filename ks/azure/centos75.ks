@@ -19,10 +19,10 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://olcentgbl.trafficmanager.net/centos/7.5.1804/os/x86_64/
-repo --name="os" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.5.1804/os/x86_64/" --cost=100
-repo --name="updates" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.5.1804/updates/x86_64/" --cost=100
-repo --name="extras" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.5.1804/extras/x86_64/" --cost=100
+url --url=http://olcentgbl-masters.trafficmanager.net/centos/7.5.1804/os/x86_64/
+repo --name="os" --baseurl="http://olcentgbl-masters.trafficmanager.net/centos/7.5.1804/os/x86_64/" --cost=100
+repo --name="updates" --baseurl="http://olcentgbl-masters.trafficmanager.net/centos/7.5.1804/updates/x86_64/" --cost=100
+repo --name="extras" --baseurl="http://olcentgbl-masters.trafficmanager.net/centos/7.5.1804/extras/x86_64/" --cost=100
 repo --name="openlogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/"
 
 # Root password
@@ -100,8 +100,8 @@ usermod root -p '!!'
 # Set OL repos
 curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
-sed -i -e 's/$releasever/7.5.1804/' /etc/yum.repos.d/CentOS-Base.repo
-sed -i -e 's/$releasever/7.5.1804/' /etc/yum.repos.d/OpenLogic.repo
+sed -i -e 's/$releasever/7.5.1804/' -e 's/olcentbgl/olcentbgl-masters/' /etc/yum.repos.d/CentOS-Base.repo
+sed -i -e 's/$releasever/7.5.1804/' -e 's/olcentbgl/olcentbgl-masters/' /etc/yum.repos.d/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
