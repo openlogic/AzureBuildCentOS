@@ -241,7 +241,7 @@ then
 	cloud-init clean
 
 	# Enable the Azure datasource
-	cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+	cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<-EOF
 	# This configuration file is used to connect to the Azure DS sooner
 	datasource_list: [ Azure ]
 	EOF
