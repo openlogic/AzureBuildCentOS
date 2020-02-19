@@ -123,6 +123,9 @@ grub2-mkconfig --output /etc/grub2-efi.cfg
 grub2-install --target=i386-pc --directory=/usr/lib/grub/i386-pc/ /dev/sda
 grub2-mkconfig --output=/boot/grub2/grub.cfg
 
+# Replace missing fallback.efi in CentOS 7.4.1708 ( https://github.com/rhboot/shim/issues/101 )
+cp -a /boot/efi/EFI/BOOT/fbx64.efi /boot/efi/EFI/BOOT/fallback.efi
+
 # Grab major version number so we can properly adjust grub config.
 # Should work on both RHEL and CentOS reliably
 majorVersion=$(rpm -E %{rhel})
