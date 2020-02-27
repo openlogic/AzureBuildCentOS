@@ -179,7 +179,6 @@ majorVersion=$(rpm -E %{rhel})
  [ "$majorVersion" = "8" ] && {
    EFI_ID=`blkid --match-tag UUID --output value /dev/sda15`
    BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
-   sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
  }
  sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
  sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
