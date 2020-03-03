@@ -19,8 +19,8 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url=http://olcentgbl.trafficmanager.net/centos/7.5.1804/os/x86_64/
-repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/7.5.1804/updates/x86_64/
+url --url=http://olcentgbl-masters.trafficmanager.net/centos/7.5.1804/os/x86_64/
+repo --name="CentOS-Updates" --baseurl=http://olcentgbl-masters.trafficmanager.net/centos/7.5.1804/updates/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
