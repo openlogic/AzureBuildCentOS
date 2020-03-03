@@ -77,7 +77,6 @@ sudo
 python-pyasn1
 parted
 WALinuxAgent
-msft-rdma-drivers
 selinux-policy-devel
 rdma
 librdmacm
