@@ -21,6 +21,7 @@ network --bootproto=dhcp
 # Use network installation
 url --url=http://olcentgbl-masters.trafficmanager.net/centos/7.5.1804/os/x86_64/
 repo --name="CentOS-Updates" --baseurl=http://olcentgbl-masters.trafficmanager.net/centos/7.5.1804/updates/x86_64/
+repo --name="openlogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/7.5.1804/openlogic/x86_64/"
 
 # Root password
 rootpw --plaintext "to_be_disabled"
@@ -77,6 +78,7 @@ sudo
 python-pyasn1
 parted
 WALinuxAgent
+msft-rdma-drivers
 selinux-policy-devel
 rdma
 librdmacm
