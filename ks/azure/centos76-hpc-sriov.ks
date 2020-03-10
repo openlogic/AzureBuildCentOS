@@ -218,7 +218,7 @@ SUBSYSTEM=="net", DRIVERS=="hv_pci", ACTION=="add", ENV{NM_UNMANAGED}="1"
 EOF
 
 cd /tmp
-CENTOS_HPC_VERSION="centos-7.6-hpc-20191107"
+CENTOS_HPC_VERSION="centos-7.6-hpc-20200306"
 wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
 tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
 cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.6-hpc
