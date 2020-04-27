@@ -108,7 +108,6 @@ usermod root -p '!!'
 curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 sed -i -e 's/$releasever/7.7.1908/' /etc/yum.repos.d/CentOS-Base.repo
-sed -i -e 's/$releasever/7.7.1908/' /etc/yum.repos.d/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
@@ -265,12 +264,9 @@ then
 	EOF
 fi
 
-fi
-
 # Download these again at the end of the post-install script so we can recreate a previous point release without current major version updates
 # Set OL repos
 curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
-curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
