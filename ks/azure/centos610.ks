@@ -21,6 +21,7 @@ network --bootproto=dhcp
 # Use network installation
 url --url=http://olcentgbl.trafficmanager.net/centos/6.10/os/x86_64/
 repo --name="CentOS-Updates" --baseurl=http://olcentgbl.trafficmanager.net/centos/6.10/updates/x86_64/
+repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/6/openlogic/x86_64/
 
 # Root password
 rootpw --plaintext "to_be_disabled"
@@ -42,9 +43,6 @@ part / --fstype="ext4" --size=1 --grow --asprimary
 
 # System bootloader configuration
 bootloader --location=mbr --append="console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 disable_mtrr_trim" --timeout=1
-
-# Add OpenLogic repo
-repo --name=openlogic --baseurl=http://olcentgbl.trafficmanager.net/openlogic/6/openlogic/x86_64/
 
 # Firewall configuration
 firewall --disabled
@@ -95,14 +93,20 @@ sed -i 's/ rhgb//g' /boot/grub/grub.conf
 sed -i 's/ quiet//g' /boot/grub/grub.conf
 sed -i 's/ crashkernel=auto//g' /boot/grub/grub.conf
 
+# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
 # Set OL repos
-curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base.repo
-curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base.repo
+curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+sed -i -e 's/$releasever/6.10/' /etc/yum.repos.d/CentOS-Base.repo
+sed -i -e 's/$releasever/6.10/' /etc/yum.repos.d/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
-curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
+curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
+
+# Enforce GRUB_TIMEOUT=1 and remove any existing GRUB_TIMEOUT_STYLE and append GRUB_TIMEOUT_STYLE=countdown after GRUB_TIMEOUT
+sed -i -n -e 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e '/^GRUB_TIMEOUT_STYLE=/!p' -e '/^GRUB_TIMEOUT=/aGRUB_TIMEOUT_STYLE=countdown' /etc/default/grub
 
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
@@ -137,6 +141,36 @@ chkconfig cups off
 # Modify yum
 echo "http_caching=packages" >> /etc/yum.conf
 yum clean all
+
+# Disable cloud-init config ... for now [RDA 200427]
+if [ 0 = 1 ]
+then
+	# Disable provisioning and ephemeral disk handling in waagent.conf
+	sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
+	sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
+	sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
+	sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
+
+	# Update the default cloud.cfg to move disk setup to the beginning of init phase
+	sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
+	sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
+	sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
+	sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
+	cloud-init clean
+
+	# Enable the Azure datasource
+	cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<-EOF
+	# This configuration file is used to connect to the Azure DS sooner
+	datasource_list: [ Azure ]
+	EOF
+fi
+
+fi
+
+# Download these again at the end of the post-install script so we can recreate a previous point release without current major version updates
+# Set OL repos
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base.repo
+curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
