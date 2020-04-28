@@ -105,8 +105,19 @@ curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/op
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 
-# Enforce GRUB_TIMEOUT=1 and remove any existing GRUB_TIMEOUT_STYLE and append GRUB_TIMEOUT_STYLE=countdown after GRUB_TIMEOUT
-sed -i -n -e 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e '/^GRUB_TIMEOUT_STYLE=/!p' -e '/^GRUB_TIMEOUT=/aGRUB_TIMEOUT_STYLE=countdown' /etc/default/grub
+# Grab major version number so we can properly adjust grub config.
+# Should work on both RHEL and CentOS reliably
+majorVersion=$(rpm -E %{rhel})
+
+[ "$majorVersion" = "6" ] && {
+	# GRUB: Enforce timeout=1 and append hiddenmenu after splashimage, if necessary
+	sed -i -e 's/timeout=.*/timeout=1/' /boot/grub/grub.conf
+	grep -q ^hiddenmenu /boot/grub/grub.conf || sed -i -e '/^splashimage=/ahiddenmenu' /boot/grub/grub.conf
+}
+[ "$majorVersion" != "6" ] && {
+	# GRUB2: Enforce GRUB_TIMEOUT=1 and remove any existing GRUB_TIMEOUT_STYLE and append GRUB_TIMEOUT_STYLE=countdown after GRUB_TIMEOUT
+	sed -i -n -e 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e '/^GRUB_TIMEOUT_STYLE=/!p' -e '/^GRUB_TIMEOUT=/aGRUB_TIMEOUT_STYLE=countdown' /etc/default/grub
+}
 
 # Enable SSH keepalive
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
@@ -163,8 +174,6 @@ then
 	# This configuration file is used to connect to the Azure DS sooner
 	datasource_list: [ Azure ]
 	EOF
-fi
-
 fi
 
 # Download these again at the end of the post-install script so we can recreate a previous point release without current major version updates
