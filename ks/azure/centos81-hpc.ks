@@ -90,6 +90,7 @@ rng-tools
 cracklib
 cracklib-dicts
 centos-release
+bind-utils
 python3
 
 # pull firmware packages out
@@ -137,20 +138,26 @@ gdisk
 # Disable the root account
 usermod root -p '!!'
 
+# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
 # Set Base and AppStream repos to the Azure mirrors
 sed -i 's/mirror.centos.org/olcentgbl.trafficmanager.net/'  /etc/yum.repos.d/CentOS-AppStream.repo
 sed -i 's/^mirrorlist/#mirrorlist/'                         /etc/yum.repos.d/CentOS-AppStream.repo
 sed -i 's/^#baseurl/baseurl/'                               /etc/yum.repos.d/CentOS-AppStream.repo
+sed -i -e 's/$releasever/8.1.1911/' /etc/yum.repos.d/CentOS-AppStream.repo
 
 sed -i 's/mirror.centos.org/olcentgbl.trafficmanager.net/'  /etc/yum.repos.d/CentOS-Base.repo
 sed -i 's/^mirrorlist/#mirrorlist/'                         /etc/yum.repos.d/CentOS-Base.repo
 sed -i 's/^#baseurl/baseurl/'                               /etc/yum.repos.d/CentOS-Base.repo
+sed -i -e 's/$releasever/8.1.1911/' /etc/yum.repos.d/CentOS-Base.repo
 
 # Import CentOS public key
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
+
+# Enforce GRUB_TIMEOUT=1 and remove any existing GRUB_TIMEOUT_STYLE and append GRUB_TIMEOUT_STYLE=countdown after GRUB_TIMEOUT
+sed -i -n -e 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e '/^GRUB_TIMEOUT_STYLE=/!p' -e '/^GRUB_TIMEOUT=/aGRUB_TIMEOUT_STYLE=countdown' /etc/default/grub
 
 # Enable grub serial console
 echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"' >> /etc/default/grub
@@ -250,6 +257,11 @@ dnf clean all
 
 # Set tuned profile
 echo "virtual-guest" > /etc/tuned/active_profile
+
+
+# Unset point release at the end of the post-install script so we can recreate a previous point release without current major version updates
+sed -i -e 's/8.1.1911/$releasever/' /etc/yum.repos.d/CentOS-Base.repo
+sed -i -e 's/8.1.1911/$releasever/' /etc/yum.repos.d/CentOS-AppStream.repo
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
