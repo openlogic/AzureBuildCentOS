@@ -249,16 +249,26 @@ then
     sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
     sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
     sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
-    cloud-init clean
+    cloud-init clean --logs
 
     # Enable the Azure datasource
     cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
-    # This configuration file is used to connect to the Azure DS sooner
-    datasource_list: [ Azure ]
-    EOF
+# This configuration file is used to connect to the Azure DS sooner
+datasource_list: [ Azure ]
+EOF
+
+    # Enable KVP for reporting provisioning telemetry
+    cat > /etc/cloud/cloud.cfg.d/10-azure-kvp.cfg <<EOF
+# This configuration file enables provisioning telemetry reporting
+reporting:
+  logging:
+    type: log
+  telemetry:
+    type: hyperv
+EOF
 
     # Write a systemd unit that will generate a dataloss warning file
-    cat <<EOF > /etc/systemd/system/temp-disk-dataloss-warning.service
+    cat > /etc/systemd/system/temp-disk-dataloss-warning.service <<EOF
 # /etc/systemd/system/temp-disk-dataloss-warning.service
 
 [Unit]
@@ -274,7 +284,7 @@ StandardOutput=journal+console
 WantedBy=default.target
 EOF
 
-    cat <<'EOFF' > /usr/local/sbin/temp-disk-dataloss-warning
+    cat > /usr/local/sbin/temp-disk-dataloss-warning <<'EOFF'
 #!/bin/sh
 # /usr/local/sbin/temp-disk-dataloss-warning
 # Write dataloss warning file on mounted Azure resource disk
@@ -298,7 +308,7 @@ fi
 
 echo "Creating a dataloss warning file at ${MOUNTPATH}/DATALOSS_WARNING_README.txt"
 
-cat <<'EOF' > ${MOUNTPATH}/DATALOSS_WARNING_README.txt
+cat > ${MOUNTPATH}/DATALOSS_WARNING_README.txt <<'EOF'
 WARNING: THIS IS A TEMPORARY DISK.
 
 Any data stored on this drive is SUBJECT TO LOSS and THERE IS NO WAY TO RECOVER IT.
@@ -314,7 +324,7 @@ EOFF
     systemctl enable temp-disk-dataloss-warning
 
     # Create a systemd unit that will handle swapfile
-    cat <<EOF > /etc/systemd/system/temp-disk-swapfile.service
+    cat > /etc/systemd/system/temp-disk-swapfile.service <<EOF
 # /etc/systemd/system/temp-disk-swapfile.service
 
 [Unit]
@@ -336,7 +346,7 @@ StandardOutput=journal+console
 [Install]
 WantedBy=cloud-config.service
 EOF
-    cat <<'EOF' > /usr/local/sbin/temp-disk-swapfile
+    cat > /usr/local/sbin/temp-disk-swapfile <<'EOF'
 #!/bin/sh
 # Swapfile creation/deletion on mounted Azure temporary resource disk
 # /usr/local/sbin/temp-disk-swapfile
