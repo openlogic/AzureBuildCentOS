@@ -127,25 +127,25 @@ grub2-mkconfig --output=/boot/grub2/grub.cfg
 # Should work on both RHEL and CentOS reliably
 majorVersion=$(rpm -E %{rhel})
 
- # Fix grub.cfg to remove EFI entries, otherwise "boot=" is not set correctly and blscfg fails
- [ "$majorVersion" = "7" ] && {
-   EFI_ID=`blkid -s UUID -o value /dev/sda15`
-   EFI_ID=`blkid -s UUID -o value /dev/sda1`
-   sed -i 's|$prefix/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
-   sed -i 's|load_env|load_env -f (hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+# Fix grub.cfg to remove EFI entries, otherwise "boot=" is not set correctly and blscfg fails
+[ "$majorVersion" = "7" ] && {
+  EFI_ID=`blkid -s UUID -o value /dev/sda15`
+  EFI_ID=`blkid -s UUID -o value /dev/sda1`
+  sed -i 's|$prefix/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+  sed -i 's|load_env|load_env -f (hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
 
-   # Required for CentOS 7.x due to no blscfg: https://bugzilla.redhat.com/show_bug.cgi?id=1570991#c6
-   #cat /etc/grub2-efi.cfg | sed -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' > /boot/grub2/grub.cfg
-   sed -i -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' /boot/grub2/grub.cfg
- }
- [ "$majorVersion" = "8" ] && {
-   EFI_ID=`blkid --match-tag UUID --output value /dev/sda15`
-   BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
-   sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
- }
- sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
- sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
- sed -i '/^### BEGIN \/etc\/grub.d\/30_uefi/,/^### END \/etc\/grub.d\/30_uefi/{/^### BEGIN \/etc\/grub.d\/30_uefi/!{/^### END \/etc\/grub.d\/30_uefi/!d}}' /boot/grub2/grub.cfg
+  # Required for CentOS 7.x due to no blscfg: https://bugzilla.redhat.com/show_bug.cgi?id=1570991#c6
+  #cat /etc/grub2-efi.cfg | sed -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' > /boot/grub2/grub.cfg
+  sed -i -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' /boot/grub2/grub.cfg
+}
+[ "$majorVersion" = "8" ] && {
+  EFI_ID=`blkid --match-tag UUID --output value /dev/sda15`
+  BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
+  sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+}
+sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
+sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
+sed -i '/^### BEGIN \/etc\/grub.d\/30_uefi/,/^### END \/etc\/grub.d\/30_uefi/{/^### BEGIN \/etc\/grub.d\/30_uefi/!{/^### END \/etc\/grub.d\/30_uefi/!d}}' /boot/grub2/grub.cfg
 
 # Blacklist the nouveau driver
 cat << EOF > /etc/modprobe.d/blacklist-nouveau.conf
@@ -235,30 +235,27 @@ yum clean all
 # Set tuned profile
 echo "virtual-guest" > /etc/tuned/active_profile
 
-# Disable cloud-init config ... for now [RDA 200213]
-if [ 0 = 1 ]
-then
-	# Disable provisioning and ephemeral disk handling in waagent.conf
-        sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
-        sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
-        sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
-        sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
+# Disable provisioning and ephemeral disk handling in waagent.conf
+sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
+sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
+sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
+sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
 
-        # Update the default cloud.cfg to move disk setup to the beginning of init phase
-        sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
-        sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
-        sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
-        sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
-        cloud-init clean --logs
+# Update the default cloud.cfg to move disk setup to the beginning of init phase
+sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
+sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
+sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
+sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
+cloud-init clean --logs
 
-        # Enable the Azure datasource
-        cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+# Enable the Azure datasource
+cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
 # This configuration file is used to connect to the Azure DS sooner
 datasource_list: [ Azure ]
 EOF
 
-        # Enable KVP for reporting provisioning telemetry
-    cat > /etc/cloud/cloud.cfg.d/10-azure-kvp.cfg <<EOF
+# Enable KVP for reporting provisioning telemetry
+cat > /etc/cloud/cloud.cfg.d/10-azure-kvp.cfg <<EOF
 # This configuration file enables provisioning telemetry reporting
 reporting:
   logging:
@@ -267,8 +264,8 @@ reporting:
     type: hyperv
 EOF
 
-    # Write a systemd unit that will generate a dataloss warning file
-    cat > /etc/systemd/system/temp-disk-dataloss-warning.service <<EOF
+# Write a systemd unit that will generate a dataloss warning file
+cat > /etc/systemd/system/temp-disk-dataloss-warning.service <<EOF
 # /etc/systemd/system/temp-disk-dataloss-warning.service
 
 [Unit]
@@ -284,7 +281,7 @@ StandardOutput=journal+console
 WantedBy=default.target
 EOF
 
-    cat > /usr/local/sbin/temp-disk-dataloss-warning <<'EOFF'
+cat > /usr/local/sbin/temp-disk-dataloss-warning <<'EOFF'
 #!/bin/sh
 # /usr/local/sbin/temp-disk-dataloss-warning
 # Write dataloss warning file on mounted Azure resource disk
@@ -320,9 +317,8 @@ https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-over
 
 EOF
 EOFF
-    chmod 755 /usr/local/sbin/temp-disk-dataloss-warning
-    systemctl enable temp-disk-dataloss-warning
-fi
+chmod 755 /usr/local/sbin/temp-disk-dataloss-warning
+systemctl enable temp-disk-dataloss-warning
 
 if [[ -f /mnt/resource/swapfile ]]; then
     echo removing swapfile
