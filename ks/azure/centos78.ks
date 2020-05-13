@@ -82,7 +82,7 @@ parted
 WALinuxAgent
 hypervkvpd
 gdisk
-#cloud-init
+cloud-init
 cloud-utils-growpart
 azure-repo-svc
 -dracut-config-rescue
