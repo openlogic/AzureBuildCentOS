@@ -239,23 +239,89 @@ echo "virtual-guest" > /etc/tuned/active_profile
 if [ 0 = 1 ]
 then
 	# Disable provisioning and ephemeral disk handling in waagent.conf
-	sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
-	sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
-	sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
-	sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
+        sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
+        sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
+        sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
+        sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
 
-	# Update the default cloud.cfg to move disk setup to the beginning of init phase
-	sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
-	sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
-	sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
-	sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
-	cloud-init clean
+        # Update the default cloud.cfg to move disk setup to the beginning of init phase
+        sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
+        sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
+        sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
+        sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
+        cloud-init clean --logs
 
-	# Enable the Azure datasource
-	cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
-	# This configuration file is used to connect to the Azure DS sooner
-	datasource_list: [ Azure ]
+        # Enable the Azure datasource
+        cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+# This configuration file is used to connect to the Azure DS sooner
+datasource_list: [ Azure ]
 EOF
+
+        # Enable KVP for reporting provisioning telemetry
+    cat > /etc/cloud/cloud.cfg.d/10-azure-kvp.cfg <<EOF
+# This configuration file enables provisioning telemetry reporting
+reporting:
+  logging:
+    type: log
+  telemetry:
+    type: hyperv
+EOF
+
+    # Write a systemd unit that will generate a dataloss warning file
+    cat > /etc/systemd/system/temp-disk-dataloss-warning.service <<EOF
+# /etc/systemd/system/temp-disk-dataloss-warning.service
+
+[Unit]
+Description=Azure temporary resource disk dataloss warning file creation
+After=multi-user.target cloud-final.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/temp-disk-dataloss-warning
+StandardOutput=journal+console
+
+[Install]
+WantedBy=default.target
+EOF
+
+    cat > /usr/local/sbin/temp-disk-dataloss-warning <<'EOFF'
+#!/bin/sh
+# /usr/local/sbin/temp-disk-dataloss-warning
+# Write dataloss warning file on mounted Azure resource disk
+AZURE_RESOURCE_DISK_PART1="/dev/disk/cloud/azure_resource-part1"
+
+MOUNTPATH=$(grep "$AZURE_RESOURCE_DISK_PART1" /etc/fstab | tr '\t' ' ' | cut -d' ' -f2)
+if [ -z "$MOUNTPATH" ]; then
+echo "There is no mountpoint of $AZURE_RESOURCE_DISK_PART1 in /etc/fstab"
+    exit 1
+fi
+
+if [ "$MOUNTPATH" = "none" ]; then
+    echo "Mountpoint of $AZURE_RESOURCE_DISK_PART1 is not a path"
+    exit 1
+fi
+
+if ! mountpoint -q "$MOUNTPATH"; then
+    echo "$AZURE_RESOURCE_DISK_PART1 is not mounted at $MOUNTPATH"
+    exit 1
+fi
+
+echo "Creating a dataloss warning file at ${MOUNTPATH}/DATALOSS_WARNING_README.txt"
+
+cat > ${MOUNTPATH}/DATALOSS_WARNING_README.txt <<'EOF'
+WARNING: THIS IS A TEMPORARY DISK.
+
+Any data stored on this drive is SUBJECT TO LOSS and THERE IS NO WAY TO RECOVER IT.
+
+Please do not use this disk for storing any personal or application data.
+
+For additional details to please refer to the MSDN documentation at:
+https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
+
+EOF
+EOFF
+    chmod 755 /usr/local/sbin/temp-disk-dataloss-warning
+    systemctl enable temp-disk-dataloss-warning
 fi
 
 if [[ -f /mnt/resource/swapfile ]]; then
