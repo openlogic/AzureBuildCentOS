@@ -29,7 +29,7 @@ repo --name="openlogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,dnsmasq,NetworkManager"
+services --enabled="sshd,waagent,NetworkManager"
 
 # System timezone
 timezone Etc/UTC --isUtc
