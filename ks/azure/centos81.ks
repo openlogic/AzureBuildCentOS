@@ -22,6 +22,7 @@ network --bootproto=dhcp
 url --url="http://olcentgbl.trafficmanager.net/centos/8.1.1911/BaseOS/x86_64/os/"
 repo --name "BaseOS" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.1.1911/BaseOS/x86_64/os/" --cost=100
 repo --name="AppStream" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.1.1911/AppStream/x86_64/os/" --cost=100
+repo --name="OpenLogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/8/openlogic/x86_64/"
 
 # Root password
 rootpw --plaintext "to_be_disabled"
