@@ -29,7 +29,7 @@ repo --name="openlogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,dnsmasq,NetworkManager"
+services --enabled="sshd,waagent,NetworkManager"
 
 # System timezone
 timezone Etc/UTC --isUtc
@@ -81,9 +81,12 @@ python-pyasn1
 parted
 WALinuxAgent
 hypervkvpd
+gdisk
+cloud-init
+cloud-utils-growpart
+azure-repo-svc
 -dracut-config-rescue
 nfs-utils
-gdisk
 
 %end
 
@@ -94,20 +97,33 @@ gdisk
 # Disable the root account
 usermod root -p '!!'
 
+# Install the cloud-init from 7.8 to address the Azure byte swap issue
+yum -y update cloud-init
+
+# Install kernel 3.10.0-1127 (and interdependent pkgs) in order to provide fix:
+# rhashtable: Still do rehash when we get EEXIST ( https://github.com/torvalds/linux/commit/408f13ef358aa5ad56dc6230c2c7deb92cf462b1 )
+yum -y install kernel-3.10.0-1127.el7 kernel-devel-3.10.0-1127.el7 kernel-tools-libs-3.10.0-1127.el7 kernel-tools-3.10.0-1127.el7 bpftool-3.10.0-1127.el7 python-perf-3.10.0-1127.el7
+# Remove older kernel installed by anaconda during install
+package-cleanup -y --oldkernels --count=1
+yum clean all
+
 # Set these to the point release baseurls so we can recreate a previous point release without current major version updates
 # Set OL repos
-curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
-curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
+curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 sed -i -e 's/$releasever/7.6.1810/' /etc/yum.repos.d/CentOS-Base.repo
 sed -i -e 's/$releasever/7.6.1810/' /etc/yum.repos.d/OpenLogic.repo
 
 # Import CentOS and OpenLogic public keys
-curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
+curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
+
+# Enforce GRUB_TIMEOUT=1 and remove any existing GRUB_TIMEOUT_STYLE and append GRUB_TIMEOUT_STYLE=countdown after GRUB_TIMEOUT
+sed -i -n -e 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e '/^GRUB_TIMEOUT_STYLE=/!p' -e '/^GRUB_TIMEOUT=/aGRUB_TIMEOUT_STYLE=countdown' /etc/default/grub
 
 # Enable grub serial console
 echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"' >> /etc/default/grub
@@ -122,30 +138,33 @@ grub2-mkconfig --output=/boot/grub2/grub.cfg
 # Should work on both RHEL and CentOS reliably
 majorVersion=$(rpm -E %{rhel})
 
- # Fix grub.cfg to remove EFI entries, otherwise "boot=" is not set correctly and blscfg fails
- [ "$majorVersion" = "7" ] && {
-   EFI_ID=`blkid -s UUID -o value /dev/sda15`
-   EFI_ID=`blkid -s UUID -o value /dev/sda1`
-   sed -i 's|$prefix/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
-   sed -i 's|load_env|load_env -f (hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+# Fix grub.cfg to remove EFI entries, otherwise "boot=" is not set correctly and blscfg fails
+[ "$majorVersion" = "7" ] && {
+  EFI_ID=`blkid -s UUID -o value /dev/sda15`
+  EFI_ID=`blkid -s UUID -o value /dev/sda1`
+  sed -i 's|$prefix/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+  sed -i 's|load_env|load_env -f (hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
 
-   # Required for CentOS 7.x due to no blscfg: https://bugzilla.redhat.com/show_bug.cgi?id=1570991#c6
-   #cat /etc/grub2-efi.cfg | sed -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' > /boot/grub2/grub.cfg
-   sed -i -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' /boot/grub2/grub.cfg
- }
- [ "$majorVersion" = "8" ] && {
-   EFI_ID=`blkid --match-tag UUID --output value /dev/sda15`
-   BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
-   sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
- }
- sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
- sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
- sed -i '/^### BEGIN \/etc\/grub.d\/30_uefi/,/^### END \/etc\/grub.d\/30_uefi/{/^### BEGIN \/etc\/grub.d\/30_uefi/!{/^### END \/etc\/grub.d\/30_uefi/!d}}' /boot/grub2/grub.cfg
+  # Required for CentOS 7.x due to no blscfg: https://bugzilla.redhat.com/show_bug.cgi?id=1570991#c6
+  #cat /etc/grub2-efi.cfg | sed -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' > /boot/grub2/grub.cfg
+  sed -i -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' /boot/grub2/grub.cfg
+}
+[ "$majorVersion" = "8" ] && {
+  EFI_ID=`blkid --match-tag UUID --output value /dev/sda15`
+  BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
+}
+sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
+sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
+sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+sed -i '/^### BEGIN \/etc\/grub.d\/30_uefi/,/^### END \/etc\/grub.d\/30_uefi/{/^### BEGIN \/etc\/grub.d\/30_uefi/!{/^### END \/etc\/grub.d\/30_uefi/!d}}' /boot/grub2/grub.cfg
 
 # Blacklist the nouveau driver
 cat << EOF > /etc/modprobe.d/blacklist-nouveau.conf
 blacklist nouveau
 options nouveau modeset=0
+EOF
+cat << EOF > /etc/modprobe.d/blacklist-floppy.conf
+blacklist floppy
 EOF
 
 # Ensure Hyper-V drivers are built into initramfs
@@ -218,7 +237,7 @@ SUBSYSTEM=="net", DRIVERS=="hv_pci", ACTION=="add", ENV{NM_UNMANAGED}="1"
 EOF
 
 cd /tmp
-CENTOS_HPC_VERSION="centos-7.6-hpc-20200417"
+CENTOS_HPC_VERSION="centos-7.6-hpc-20200629"
 wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
 tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
 cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.x/centos-7.6-hpc
@@ -230,13 +249,203 @@ echo "http_caching=packages" >> /etc/yum.conf
 yum history sync
 yum clean all
 
-# Download these again after the HPC build stage so we can recreate a previous point release without current major version updates
-# Set OL repos
-curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
-curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/szarkos/AzureBuildCentOS/master/config/azure/OpenLogic.repo
-
 # Set tuned profile
 echo "virtual-guest" > /etc/tuned/active_profile
+
+# Disable provisioning and ephemeral disk handling in waagent.conf
+sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
+sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
+sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
+sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
+
+# Update the default cloud.cfg to move disk setup to the beginning of init phase
+sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
+sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
+sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
+sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
+cloud-init clean --logs
+
+# Enable the Azure datasource
+cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+# This configuration file is used to connect to the Azure DS sooner
+datasource_list: [ Azure ]
+EOF
+
+# Enable KVP for reporting provisioning telemetry
+cat > /etc/cloud/cloud.cfg.d/10-azure-kvp.cfg <<EOF
+# This configuration file enables provisioning telemetry reporting
+reporting:
+  logging:
+    type: log
+  telemetry:
+    type: hyperv
+EOF
+
+# Write a systemd unit that will generate a dataloss warning file
+cat > /etc/systemd/system/temp-disk-dataloss-warning.service <<EOF
+# /etc/systemd/system/temp-disk-dataloss-warning.service
+
+[Unit]
+Description=Azure temporary resource disk dataloss warning file creation
+After=multi-user.target cloud-final.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/temp-disk-dataloss-warning
+StandardOutput=journal+console
+
+[Install]
+WantedBy=default.target
+EOF
+
+cat > /usr/local/sbin/temp-disk-dataloss-warning <<'EOFF'
+#!/bin/sh
+# /usr/local/sbin/temp-disk-dataloss-warning
+# Write dataloss warning file on mounted Azure resource disk
+AZURE_RESOURCE_DISK_PART1="/dev/disk/cloud/azure_resource-part1"
+
+MOUNTPATH=$(grep "$AZURE_RESOURCE_DISK_PART1" /etc/fstab | tr '\t' ' ' | cut -d' ' -f2)
+if [ -z "$MOUNTPATH" ]; then
+echo "There is no mountpoint of $AZURE_RESOURCE_DISK_PART1 in /etc/fstab"
+    exit 1
+fi
+
+if [ "$MOUNTPATH" = "none" ]; then
+    echo "Mountpoint of $AZURE_RESOURCE_DISK_PART1 is not a path"
+    exit 1
+fi
+
+if ! mountpoint -q "$MOUNTPATH"; then
+    echo "$AZURE_RESOURCE_DISK_PART1 is not mounted at $MOUNTPATH"
+    exit 1
+fi
+
+echo "Creating a dataloss warning file at ${MOUNTPATH}/DATALOSS_WARNING_README.txt"
+
+cat > ${MOUNTPATH}/DATALOSS_WARNING_README.txt <<'EOF'
+WARNING: THIS IS A TEMPORARY DISK.
+
+Any data stored on this drive is SUBJECT TO LOSS and THERE IS NO WAY TO RECOVER IT.
+
+Please do not use this disk for storing any personal or application data.
+
+For additional details to please refer to the MSDN documentation at:
+https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
+
+EOF
+EOFF
+chmod 755 /usr/local/sbin/temp-disk-dataloss-warning
+systemctl enable temp-disk-dataloss-warning
+
+# Create a systemd unit that will handle swapfile
+cat <<EOF > /etc/systemd/system/temp-disk-swapfile.service
+# /etc/systemd/system/temp-disk-swapfile.service
+
+[Unit]
+Description=Swapfile management on mounted Azure temporary resource disk
+After=network-online.target local-fs.target cloud-config.target
+Wants=network-online.target local-fs.target cloud-config.target
+Before=cloud-config.service
+
+ConditionPathIsMountPoint=/mnt/resource
+RequiresMountsFor=/mnt/resource
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/temp-disk-swapfile start
+ExecStop=/usr/local/sbin/temp-disk-swapfile stop
+RemainAfterExit=yes
+StandardOutput=journal+console
+
+[Install]
+WantedBy=cloud-config.service
+EOF
+
+cat <<'EOF' > /usr/local/sbin/temp-disk-swapfile
+#!/bin/sh
+# Swapfile creation/deletion on mounted Azure temporary resource disk
+# /usr/local/sbin/temp-disk-swapfile
+# See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
+
+AZURE_RESOURCE_DISK_PART1="/dev/disk/cloud/azure_resource-part1"
+
+start() {
+    MOUNTPATH=$(grep "$AZURE_RESOURCE_DISK_PART1" /etc/fstab | tr '\t' ' ' | cut -d' ' -f2)
+    if [ -z "$MOUNTPATH" ]; then
+        echo "There is no mountpoint of $AZURE_RESOURCE_DISK_PART1 in /etc/fstab"
+        exit 1
+    fi
+
+    if [ "$MOUNTPATH" = "none" ]; then
+        echo "Mountpoint of $AZURE_RESOURCE_DISK_PART1 is not a path"
+        exit 1
+    fi
+
+    if ! mountpoint -q "$MOUNTPATH"; then
+        echo "$AZURE_RESOURCE_DISK_PART1 is not mounted at $MOUNTPATH"
+        exit 1
+    fi
+
+    SWAPFILEPATH="${MOUNTPATH}/swapfile"
+
+    if [ ! -f "$SWAPFILEPATH" ]; then
+        (sh -c 'rm -f "$1" && umask 0066 && { fallocate -l "${2}M" "$1" || dd if=/dev/zero "of=$1" bs=1M "count=$2"; } && mkswap "$1" || { r=$?; rm -f "$1"; exit $r; }' 'setup_swap' "$SWAPFILEPATH" '2048') || (echo "Failed to create swapfile at $SWAPFILEPATH"; exit 1)
+        echo "Successfully created swapfile at $SWAPFILEPATH"
+    fi
+    swapon "$SWAPFILEPATH" || (echo "Failed to activate swapfile at $SWAPFILEPATH"; exit 1)
+    echo "Successfully activated swapfile at $SWAPFILEPATH"
+}
+
+stop() {
+    FINDMNTDATA=$(findmnt -S "$AZURE_RESOURCE_DISK_PART1" 2> /dev/null | grep --color=never '/')
+    if [ -z "$FINDMNTDATA" ]; then
+        exit 0
+    fi
+
+    MOUNTPATH=$(echo "$FINDMNTDATA" | cut -d' ' -f1)
+    if [ -z "$MOUNTPATH" ]; then
+        exit 0
+    fi
+
+    (sh -c 'swapoff "$1" && rm -f "$1"' 'swapoff_rm_swap' "${MOUNTPATH}/swapfile") || true
+}
+
+case $1 in
+  start|stop) "$1" ;;
+esac
+
+EOF
+
+chmod 755 /usr/local/sbin/temp-disk-swapfile
+systemctl enable temp-disk-swapfile
+
+# Mount ephemeral disk at /mnt/resource
+cat >> /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+# By default, the Azure ephemeral temporary resource disk will be mounted
+# by cloud-init at /mnt/resource.
+#
+# If the mountpoint of the temporary resource disk is customized
+# to be something else other than the /mnt/resource default mountpoint,
+# the RequiresMountsFor and ConditionPathIsMountPoint options of the following
+# systemd unit should be updated accordingly:
+#   temp-disk-swapfile.service (/etc/systemd/system/temp-disk-swapfile.service)
+#
+# For additional details on the temporary resource disk please refer to the MSDN documentation at:
+# https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
+mounts:
+  - [ ephemeral0, /mnt/resource ]
+EOF
+
+if [[ -f /mnt/resource/swapfile ]]; then
+    echo removing swapfile
+    swapoff /mnt/resource/swapfile
+    rm /mnt/resource/swapfile -f
+fi
+
+# Download these again at the end of the post-install script so we can recreate a previous point release without current major version updates
+# Set OL repos
+curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
+#curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision

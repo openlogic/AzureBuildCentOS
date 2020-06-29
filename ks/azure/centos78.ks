@@ -141,10 +141,10 @@ majorVersion=$(rpm -E %{rhel})
 [ "$majorVersion" = "8" ] && {
   EFI_ID=`blkid --match-tag UUID --output value /dev/sda15`
   BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
-  sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
 }
 sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
 sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
+sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
 sed -i '/^### BEGIN \/etc\/grub.d\/30_uefi/,/^### END \/etc\/grub.d\/30_uefi/{/^### BEGIN \/etc\/grub.d\/30_uefi/!{/^### END \/etc\/grub.d\/30_uefi/!d}}' /boot/grub2/grub.cfg
 
 # Blacklist the nouveau driver
@@ -319,6 +319,105 @@ EOF
 EOFF
 chmod 755 /usr/local/sbin/temp-disk-dataloss-warning
 systemctl enable temp-disk-dataloss-warning
+
+# Create a systemd unit that will handle swapfile
+cat <<EOF > /etc/systemd/system/temp-disk-swapfile.service
+# /etc/systemd/system/temp-disk-swapfile.service
+
+[Unit]
+Description=Swapfile management on mounted Azure temporary resource disk
+After=network-online.target local-fs.target cloud-config.target
+Wants=network-online.target local-fs.target cloud-config.target
+Before=cloud-config.service
+
+ConditionPathIsMountPoint=/mnt/resource
+RequiresMountsFor=/mnt/resource
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/temp-disk-swapfile start
+ExecStop=/usr/local/sbin/temp-disk-swapfile stop
+RemainAfterExit=yes
+StandardOutput=journal+console
+
+[Install]
+WantedBy=cloud-config.service
+EOF
+
+cat <<'EOF' > /usr/local/sbin/temp-disk-swapfile
+#!/bin/sh
+# Swapfile creation/deletion on mounted Azure temporary resource disk
+# /usr/local/sbin/temp-disk-swapfile
+# See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
+
+AZURE_RESOURCE_DISK_PART1="/dev/disk/cloud/azure_resource-part1"
+
+start() {
+    MOUNTPATH=$(grep "$AZURE_RESOURCE_DISK_PART1" /etc/fstab | tr '\t' ' ' | cut -d' ' -f2)
+    if [ -z "$MOUNTPATH" ]; then
+        echo "There is no mountpoint of $AZURE_RESOURCE_DISK_PART1 in /etc/fstab"
+        exit 1
+    fi
+
+    if [ "$MOUNTPATH" = "none" ]; then
+        echo "Mountpoint of $AZURE_RESOURCE_DISK_PART1 is not a path"
+        exit 1
+    fi
+
+    if ! mountpoint -q "$MOUNTPATH"; then
+        echo "$AZURE_RESOURCE_DISK_PART1 is not mounted at $MOUNTPATH"
+        exit 1
+    fi
+
+    SWAPFILEPATH="${MOUNTPATH}/swapfile"
+
+    if [ ! -f "$SWAPFILEPATH" ]; then
+        (sh -c 'rm -f "$1" && umask 0066 && { fallocate -l "${2}M" "$1" || dd if=/dev/zero "of=$1" bs=1M "count=$2"; } && mkswap "$1" || { r=$?; rm -f "$1"; exit $r; }' 'setup_swap' "$SWAPFILEPATH" '2048') || (echo "Failed to create swapfile at $SWAPFILEPATH"; exit 1)
+        echo "Successfully created swapfile at $SWAPFILEPATH"
+    fi
+    swapon "$SWAPFILEPATH" || (echo "Failed to activate swapfile at $SWAPFILEPATH"; exit 1)
+    echo "Successfully activated swapfile at $SWAPFILEPATH"
+}
+
+stop() {
+    FINDMNTDATA=$(findmnt -S "$AZURE_RESOURCE_DISK_PART1" 2> /dev/null | grep --color=never '/')
+    if [ -z "$FINDMNTDATA" ]; then
+        exit 0
+    fi
+
+    MOUNTPATH=$(echo "$FINDMNTDATA" | cut -d' ' -f1)
+    if [ -z "$MOUNTPATH" ]; then
+        exit 0
+    fi
+
+    (sh -c 'swapoff "$1" && rm -f "$1"' 'swapoff_rm_swap' "${MOUNTPATH}/swapfile") || true
+}
+
+case $1 in
+  start|stop) "$1" ;;
+esac
+
+EOF
+
+chmod 755 /usr/local/sbin/temp-disk-swapfile
+systemctl enable temp-disk-swapfile
+
+# Mount ephemeral disk at /mnt/resource
+cat >> /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+# By default, the Azure ephemeral temporary resource disk will be mounted
+# by cloud-init at /mnt/resource.
+#
+# If the mountpoint of the temporary resource disk is customized
+# to be something else other than the /mnt/resource default mountpoint,
+# the RequiresMountsFor and ConditionPathIsMountPoint options of the following
+# systemd unit should be updated accordingly:
+#   temp-disk-swapfile.service (/etc/systemd/system/temp-disk-swapfile.service)
+#
+# For additional details on the temporary resource disk please refer to the MSDN documentation at:
+# https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
+mounts:
+  - [ ephemeral0, /mnt/resource ]
+EOF
 
 if [[ -f /mnt/resource/swapfile ]]; then
     echo removing swapfile

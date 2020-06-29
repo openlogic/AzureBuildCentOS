@@ -22,6 +22,7 @@ network --bootproto=dhcp
 url --url="http://olcentgbl.trafficmanager.net/centos/8.1.1911/BaseOS/x86_64/os/"
 repo --name "BaseOS" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.1.1911/BaseOS/x86_64/os/" --cost=100
 repo --name="AppStream" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.1.1911/AppStream/x86_64/os/" --cost=100
+repo --name="OpenLogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/8/openlogic/x86_64/"
 
 # Root password
 rootpw --plaintext "to_be_disabled"
@@ -78,6 +79,8 @@ WALinuxAgent
 chrony
 sudo
 parted
+cloud-init
+cloud-utils-growpart
 -dracut-config-rescue
 -postfix
 -NetworkManager-config-server
@@ -124,8 +127,6 @@ python3
 -plymouth
 -iprutils
 
-# enable rootfs resize on boot
-cloud-utils-growpart
 gdisk
 
 %end
@@ -153,6 +154,11 @@ sed -i -e 's/$releasever/8.1.1911/' /etc/yum.repos.d/CentOS-Base.repo
 # Import CentOS public key
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
+# Set OL repo and import OpenLogic public key
+curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
+rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
+
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
 
@@ -172,25 +178,25 @@ grub2-mkconfig --output=/boot/grub2/grub.cfg
 # Should work on both RHEL and CentOS reliably
 majorVersion=$(rpm -E %{rhel})
 
- # Fix grub.cfg to remove EFI entries, otherwise "boot=" is not set correctly and blscfg fails
- [ "$majorVersion" = "7" ] && {
-   EFI_ID=`blkid -s UUID -o value /dev/sda15`
-   EFI_ID=`blkid -s UUID -o value /dev/sda1`
-   sed -i 's|$prefix/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
-   sed -i 's|load_env|load_env -f (hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+# Fix grub.cfg to remove EFI entries, otherwise "boot=" is not set correctly and blscfg fails
+[ "$majorVersion" = "7" ] && {
+  EFI_ID=`blkid -s UUID -o value /dev/sda15`
+  EFI_ID=`blkid -s UUID -o value /dev/sda1`
+  sed -i 's|$prefix/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+  sed -i 's|load_env|load_env -f (hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
 
-   # Required for CentOS 7.x due to no blscfg: https://bugzilla.redhat.com/show_bug.cgi?id=1570991#c6
-   #cat /etc/grub2-efi.cfg | sed -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' > /boot/grub2/grub.cfg
-   sed -i -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' /boot/grub2/grub.cfg
- }
- [ "$majorVersion" = "8" ] && {
-   EFI_ID=`blkid --match-tag UUID --output value /dev/sda15`
-   BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
- }
- sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
- sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
- sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
- sed -i '/^### BEGIN \/etc\/grub.d\/30_uefi/,/^### END \/etc\/grub.d\/30_uefi/{/^### BEGIN \/etc\/grub.d\/30_uefi/!{/^### END \/etc\/grub.d\/30_uefi/!d}}' /boot/grub2/grub.cfg
+  # Required for CentOS 7.x due to no blscfg: https://bugzilla.redhat.com/show_bug.cgi?id=1570991#c6
+  #cat /etc/grub2-efi.cfg | sed -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' > /boot/grub2/grub.cfg
+  sed -i -e 's|linuxefi|linux|' -e 's|initrdefi|initrd|' /boot/grub2/grub.cfg
+}
+[ "$majorVersion" = "8" ] && {
+  EFI_ID=`blkid --match-tag UUID --output value /dev/sda15`
+  BOOT_ID=`blkid --match-tag UUID --output value /dev/sda1`
+}
+sed -i 's/gpt15/gpt1/' /boot/grub2/grub.cfg
+sed -i "s/${EFI_ID}/${BOOT_ID}/" /boot/grub2/grub.cfg
+sed -i 's|${config_directory}/grubenv|(hd0,gpt15)/efi/centos/grubenv|' /boot/grub2/grub.cfg
+sed -i '/^### BEGIN \/etc\/grub.d\/30_uefi/,/^### END \/etc\/grub.d\/30_uefi/{/^### BEGIN \/etc\/grub.d\/30_uefi/!{/^### END \/etc\/grub.d\/30_uefi/!d}}' /boot/grub2/grub.cfg
 
 # Blacklist the nouveau driver
 cat << EOF > /etc/modprobe.d/blacklist-nouveau.conf
@@ -258,6 +264,113 @@ dnf clean all
 # Set tuned profile
 echo "virtual-guest" > /etc/tuned/active_profile
 
+# Disable provisioning and ephemeral disk handling in waagent.conf
+sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
+sed -i 's/Provisioning.UseCloudInit=n/Provisioning.UseCloudInit=y/g' /etc/waagent.conf
+sed -i 's/ResourceDisk.Format=y/ResourceDisk.Format=n/g' /etc/waagent.conf
+sed -i 's/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g' /etc/waagent.conf
+
+# Update the default cloud.cfg to move disk setup to the beginning of init phase
+sed -i '/ - mounts/d' /etc/cloud/cloud.cfg
+sed -i '/ - disk_setup/d' /etc/cloud/cloud.cfg
+sed -i '/cloud_init_modules/a\\ - mounts' /etc/cloud/cloud.cfg
+sed -i '/cloud_init_modules/a\\ - disk_setup' /etc/cloud/cloud.cfg
+cloud-init clean --logs
+
+# Enable the Azure datasource
+cat > /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+# This configuration file is used to connect to the Azure DS sooner
+datasource_list: [ Azure ]
+EOF
+
+# Enable KVP for reporting provisioning telemetry
+cat > /etc/cloud/cloud.cfg.d/10-azure-kvp.cfg <<EOF
+# This configuration file enables provisioning telemetry reporting
+reporting:
+  logging:
+    type: log
+  telemetry:
+    type: hyperv
+EOF
+
+# Write a systemd unit that will generate a dataloss warning file
+cat > /etc/systemd/system/temp-disk-dataloss-warning.service <<EOF
+# /etc/systemd/system/temp-disk-dataloss-warning.service
+
+[Unit]
+Description=Azure temporary resource disk dataloss warning file creation
+After=multi-user.target cloud-final.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/temp-disk-dataloss-warning
+StandardOutput=journal+console
+
+[Install]
+WantedBy=default.target
+EOF
+
+cat > /usr/local/sbin/temp-disk-dataloss-warning <<'EOFF'
+#!/bin/sh
+# /usr/local/sbin/temp-disk-dataloss-warning
+# Write dataloss warning file on mounted Azure resource disk
+AZURE_RESOURCE_DISK_PART1="/dev/disk/cloud/azure_resource-part1"
+
+MOUNTPATH=$(grep "$AZURE_RESOURCE_DISK_PART1" /etc/fstab | tr '\t' ' ' | cut -d' ' -f2)
+if [ -z "$MOUNTPATH" ]; then
+echo "There is no mountpoint of $AZURE_RESOURCE_DISK_PART1 in /etc/fstab"
+    exit 1
+fi
+
+if [ "$MOUNTPATH" = "none" ]; then
+    echo "Mountpoint of $AZURE_RESOURCE_DISK_PART1 is not a path"
+    exit 1
+fi
+
+if ! mountpoint -q "$MOUNTPATH"; then
+    echo "$AZURE_RESOURCE_DISK_PART1 is not mounted at $MOUNTPATH"
+    exit 1
+fi
+
+echo "Creating a dataloss warning file at ${MOUNTPATH}/DATALOSS_WARNING_README.txt"
+
+cat > ${MOUNTPATH}/DATALOSS_WARNING_README.txt <<'EOF'
+WARNING: THIS IS A TEMPORARY DISK.
+
+Any data stored on this drive is SUBJECT TO LOSS and THERE IS NO WAY TO RECOVER IT.
+
+Please do not use this disk for storing any personal or application data.
+
+For additional details to please refer to the MSDN documentation at:
+https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
+
+EOF
+EOFF
+chmod 755 /usr/local/sbin/temp-disk-dataloss-warning
+systemctl enable temp-disk-dataloss-warning
+
+# Mount ephemeral disk at /mnt/resource
+cat >> /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+# By default, the Azure ephemeral temporary resource disk will be mounted
+# by cloud-init at /mnt/resource.
+#
+# If the mountpoint of the temporary resource disk is customized
+# to be something else other than the /mnt/resource default mountpoint,
+# the RequiresMountsFor and ConditionPathIsMountPoint options of the following
+# systemd unit should be updated accordingly:
+#   temp-disk-swapfile.service (/etc/systemd/system/temp-disk-swapfile.service)
+#
+# For additional details on the temporary resource disk please refer to the MSDN documentation at:
+# https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
+mounts:
+  - [ ephemeral0, /mnt/resource ]
+EOF
+
+if [[ -f /mnt/resource/swapfile ]]; then
+    echo removing swapfile
+    swapoff /mnt/resource/swapfile
+    rm /mnt/resource/swapfile -f
+fi
 
 # Unset point release at the end of the post-install script so we can recreate a previous point release without current major version updates
 sed -i -e 's/8.1.1911/$releasever/' /etc/yum.repos.d/CentOS-Base.repo

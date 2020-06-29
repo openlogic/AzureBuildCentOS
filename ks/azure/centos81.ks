@@ -340,6 +340,23 @@ EOFF
 chmod 755 /usr/local/sbin/temp-disk-dataloss-warning
 systemctl enable temp-disk-dataloss-warning
 
+# Mount ephemeral disk at /mnt/resource
+cat >> /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
+# By default, the Azure ephemeral temporary resource disk will be mounted
+# by cloud-init at /mnt/resource.
+#
+# If the mountpoint of the temporary resource disk is customized
+# to be something else other than the /mnt/resource default mountpoint,
+# the RequiresMountsFor and ConditionPathIsMountPoint options of the following
+# systemd unit should be updated accordingly:
+#   temp-disk-swapfile.service (/etc/systemd/system/temp-disk-swapfile.service)
+#
+# For additional details on the temporary resource disk please refer to the MSDN documentation at:
+# https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
+mounts:
+  - [ ephemeral0, /mnt/resource ]
+EOF
+
 if [[ -f /mnt/resource/swapfile ]]; then
     echo removing swapfile
     swapoff /mnt/resource/swapfile
