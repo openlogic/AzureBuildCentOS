@@ -10,35 +10,39 @@
 #
 #
 
-[base]
-name=CentOS-$releasever - Base
+[base-openlogic]
+name=CentOS-$releasever - Base (OpenLogic)
 #mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os&infra=$infra
 baseurl=http://olcentgbl.trafficmanager.net/centos/$releasever/os/$basearch/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+cost=100
 
 #released updates
-[updates]
-name=CentOS-$releasever - Updates
+[updates-openlogic]
+name=CentOS-$releasever - Updates (OpenLogic)
 #mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=updates&infra=$infra
 baseurl=http://olcentgbl.trafficmanager.net/centos/$releasever/updates/$basearch/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+cost=100
 
 #additional packages that may be useful
-[extras]
-name=CentOS-$releasever - Extras
+[extras-openlogic]
+name=CentOS-$releasever - Extras (OpenLogic)
 #mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=extras&infra=$infra
 baseurl=http://olcentgbl.trafficmanager.net/centos/$releasever/extras/$basearch/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+cost=100
 
 #additional packages that extend functionality of existing packages
-[centosplus]
-name=CentOS-$releasever - Plus
+[centosplus-openlogic]
+name=CentOS-$releasever - Plus (OpenLogic)
 #mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=centosplus&infra=$infra
 baseurl=http://olcentgbl.trafficmanager.net/centos/$releasever/centosplus/$basearch/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+cost=100
 
