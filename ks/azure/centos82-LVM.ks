@@ -109,6 +109,7 @@ cracklib-dicts
 centos-release
 bind-utils
 python3
+timedatex
 
 # pull firmware packages out
 -aic94xx-firmware
@@ -153,25 +154,17 @@ gdisk
 # Disable the root account
 usermod root -p '!!'
 
-# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
-# Set Base and AppStream repos to the Azure mirrors
-sed -i 's/mirror.centos.org/olcentgbl.trafficmanager.net/'  /etc/yum.repos.d/CentOS-AppStream.repo
-sed -i 's/^mirrorlist/#mirrorlist/'                         /etc/yum.repos.d/CentOS-AppStream.repo
-sed -i 's/^#baseurl/baseurl/'                               /etc/yum.repos.d/CentOS-AppStream.repo
-sed -i -e 's/$releasever/8.2.2004/' /etc/yum.repos.d/CentOS-AppStream.repo
-
-sed -i 's/mirror.centos.org/olcentgbl.trafficmanager.net/'  /etc/yum.repos.d/CentOS-Base.repo
-sed -i 's/^mirrorlist/#mirrorlist/'                         /etc/yum.repos.d/CentOS-Base.repo
-sed -i 's/^#baseurl/baseurl/'                               /etc/yum.repos.d/CentOS-Base.repo
-sed -i -e 's/$releasever/8.2.2004/' /etc/yum.repos.d/CentOS-Base.repo
-
 # Import CentOS public key
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
 # Set OL repo and import OpenLogic public key
+curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-8.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
+
+# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
+#sed -i -e 's/$releasever/8.2.2004/g' /etc/yum.repos.d/*CentOS*.repo
 
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
@@ -257,6 +250,8 @@ EOF
 
 # Enable PTP with chrony for accurate time sync
 echo -e "\nrefclock PHC /dev/ptp0 poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
+sed -i 's/makestep.*$/makestep 1.0 -1/g' /etc/chrony.conf
+grep -q '^makestep' /etc/chrony.conf || echo 'makestep 1.0 -1' >> /etc/chrony.conf
 
 # Enable DNS cache
 # Comment this by default due to "DNSSEC validation failed" issues
@@ -378,8 +373,7 @@ if [[ -f /mnt/resource/swapfile ]]; then
 fi
 
 # Unset point release at the end of the post-install script so we can recreate a previous point release without current major version updates
-sed -i -e 's/8.2.2004/$releasever/' /etc/yum.repos.d/CentOS-Base.repo
-sed -i -e 's/8.2.2004/$releasever/' /etc/yum.repos.d/CentOS-AppStream.repo
+#sed -i -e 's/8.2.2004/$releasever/g' /etc/yum.repos.d/*CentOS*.repo
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision

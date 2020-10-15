@@ -87,6 +87,20 @@ cloud-utils-growpart
 azure-repo-svc
 -dracut-config-rescue
 
+# Packages required for ADE (Azure Disk Encryption) ...
+lsscsi
+psmisc
+lvm2
+uuid
+at
+patch
+cryptsetup
+cryptsetup-reencrypt
+pyparted
+procps-ng
+util-linux
+# ... ADE
+
 %end
 
 %post --log=/var/log/anaconda/post-install.log
@@ -99,17 +113,15 @@ usermod root -p '!!'
 # Install the cloud-init from 7.8 to address the Azure byte swap issue
 yum -y update cloud-init
 
-# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
-# Set OL repos
-curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
+# Set OL repo and import OpenLogic public key
+curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
-sed -i -e 's/$releasever/7.7.1908/' /etc/yum.repos.d/CentOS-Base.repo
-#sed -i -e 's/$releasever/7.7.1908/' /etc/yum.repos.d/OpenLogic.repo
-
-# Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
+
+# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
+#sed -i -e 's/$releasever/7.7.1908/g' /etc/yum.repos.d/*CentOS*.repo
 
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
@@ -227,6 +239,11 @@ cat <<EOF > /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules
 SUBSYSTEM=="net", DRIVERS=="hv_pci", ACTION=="add", ENV{NM_UNMANAGED}="1"
 
 EOF
+
+# Enable PTP with chrony for accurate time sync
+echo -e "\nrefclock PHC /dev/ptp0 poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
+sed -i 's/makestep.*$/makestep 1.0 -1/g' /etc/chrony.conf
+grep -q '^makestep' /etc/chrony.conf || echo 'makestep 1.0 -1' >> /etc/chrony.conf
 
 # Disable some unneeded services by default (administrators can re-enable if desired)
 systemctl disable abrtd
@@ -428,10 +445,8 @@ if [[ -f /mnt/resource/swapfile ]]; then
     rm /mnt/resource/swapfile -f
 fi
 
-# Download these again at the end of the post-install script so we can recreate a previous point release without current major version updates
-# Set OL repos
-curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
-#curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+# Unset point release at the end of the post-install script so we can recreate a previous point release without current major version updates
+#sed -i -e 's/7.7.1908/$releasever/g' /etc/yum.repos.d/*CentOS*.repo
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision

@@ -74,7 +74,7 @@ poweroff
 %packages
 @base
 @console-internet
-ntp
+chrony
 cifs-utils
 sudo
 python-pyasn1
@@ -87,6 +87,20 @@ cloud-utils-growpart
 azure-repo-svc
 -dracut-config-rescue
 nfs-utils
+
+# Packages required for ADE (Azure Disk Encryption) ...
+lsscsi
+psmisc
+lvm2
+uuid
+at
+patch
+cryptsetup
+cryptsetup-reencrypt
+pyparted
+procps-ng
+util-linux
+# ... ADE
 
 %end
 
@@ -107,12 +121,13 @@ yum -y install kernel-3.10.0-1127.el7 kernel-devel-3.10.0-1127.el7 kernel-tools-
 package-cleanup -y --oldkernels --count=1
 yum clean all
 
-# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
 # Set OL repos
-curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
+curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
-sed -i -e 's/$releasever/7.6.1810/' /etc/yum.repos.d/CentOS-Base.repo
-sed -i -e 's/$releasever/7.6.1810/' /etc/yum.repos.d/OpenLogic.repo
+
+# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
+sed -i -e 's/$releasever/7.6.1810/g' /etc/yum.repos.d/OpenLogicCentOS.repo
+yum-config-manager --disable base updates extras
 
 # Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
@@ -236,6 +251,7 @@ SUBSYSTEM=="net", DRIVERS=="hv_pci", ACTION=="add", ENV{NM_UNMANAGED}="1"
 
 EOF
 
+
 cd /tmp
 CENTOS_HPC_VERSION="centos-hpc-20200814"
 wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
@@ -243,6 +259,11 @@ tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
 cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.x/centos-7.6-hpc
 ./install.sh
 cd && rm -rf /tmp/azhpc-images-${CENTOS_HPC_VERSION}
+
+# Enable PTP with chrony for accurate time sync
+echo -e "\nrefclock PHC /dev/ptp0 poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
+sed -i 's/makestep.*$/makestep 1.0 -1/g' /etc/chrony.conf
+grep -q '^makestep' /etc/chrony.conf || echo 'makestep 1.0 -1' >> /etc/chrony.conf
 
 # Modify yum
 echo "http_caching=packages" >> /etc/yum.conf
@@ -442,10 +463,9 @@ if [[ -f /mnt/resource/swapfile ]]; then
     rm /mnt/resource/swapfile -f
 fi
 
-# Download these again at the end of the post-install script so we can recreate a previous point release without current major version updates
-# Set OL repos
-curl -so /etc/yum.repos.d/CentOS-Base.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
-#curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+# Unset point release at the end of the post-install script so we can recreate a previous point release without current major version updates
+sed -i -e 's/7.6.1810/$releasever/g' /etc/yum.repos.d/OpenLogicCentOS.repo
+yum-config-manager --enable base updates extras
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
