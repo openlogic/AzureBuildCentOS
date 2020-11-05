@@ -237,7 +237,7 @@ EOF
 
 
 cd /tmp
-CENTOS_HPC_VERSION="centos-hpc-11052020"
+CENTOS_HPC_VERSION="centos-hpc-20201105"
 wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
 tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
 cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-8.x/centos-8.1-hpc
