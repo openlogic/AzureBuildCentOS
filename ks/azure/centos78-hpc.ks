@@ -1,4 +1,4 @@
-# Kickstart for provisioning a CentOS 7.6 Azure HPC (SR-IOV) VM
+# Kickstart for provisioning a CentOS 7.8 Azure HPC (SR-IOV) VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,10 +19,10 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url="http://olcentgbl.trafficmanager.net/centos/7.6.1810/os/x86_64/"
-repo --name "os" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.6.1810/os/x86_64/" --cost=100
-repo --name="updates" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.6.1810/updates/x86_64/" --cost=100
-repo --name "extras" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.6.1810/extras/x86_64/" --cost=100
+url --url="http://olcentgbl.trafficmanager.net/centos/7.8.2003/os/x86_64/"
+repo --name "os" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.8.2003/os/x86_64/" --cost=100
+repo --name="updates" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.8.2003/updates/x86_64/" --cost=100
+repo --name "extras" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.8.2003/extras/x86_64/" --cost=100
 repo --name="openlogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/"
 
 # Root password
@@ -87,6 +87,7 @@ cloud-utils-growpart
 azure-repo-svc
 -dracut-config-rescue
 nfs-utils
+git
 
 # Packages required for ADE (Azure Disk Encryption) ...
 lsscsi
@@ -111,29 +112,15 @@ util-linux
 # Disable the root account
 usermod root -p '!!'
 
-# Install the cloud-init from 7.8 to address the Azure byte swap issue
-yum -y update cloud-init
-
-# Install kernel 3.10.0-1127 (and interdependent pkgs) in order to provide fix:
-# rhashtable: Still do rehash when we get EEXIST ( https://github.com/torvalds/linux/commit/408f13ef358aa5ad56dc6230c2c7deb92cf462b1 )
-yum -y install kernel-3.10.0-1127.el7 kernel-devel-3.10.0-1127.el7 kernel-tools-libs-3.10.0-1127.el7 kernel-tools-3.10.0-1127.el7 bpftool-3.10.0-1127.el7 python-perf-3.10.0-1127.el7
-# Remove older kernel installed by anaconda during install
-package-cleanup -y --oldkernels --count=1
-yum clean all
-
-# Set OL repos
+# Set OL repo and import OpenLogic public key
 curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
-
-# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
-sed -i -e 's/$releasever/7.6.1810/g' /etc/yum.repos.d/OpenLogicCentOS.repo
-yum-config-manager --disable base updates extras
-
-# Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 
+# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
+#sed -i -e 's/$releasever/7.8.2003/g' /etc/yum.repos.d/*CentOS*.repo
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
 
@@ -256,7 +243,7 @@ cd /tmp
 CENTOS_HPC_VERSION="centos-hpc-20201105"
 wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
 tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
-cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.x/centos-7.6-hpc
+cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.x/centos-7.8-hpc
 ./install.sh
 cd && rm -rf /tmp/azhpc-images-${CENTOS_HPC_VERSION}
 
@@ -265,9 +252,11 @@ echo -e "\nrefclock PHC /dev/ptp0 poll 3 dpoll -2 offset 0\n" >> /etc/chrony.con
 sed -i 's/makestep.*$/makestep 1.0 -1/g' /etc/chrony.conf
 grep -q '^makestep' /etc/chrony.conf || echo 'makestep 1.0 -1' >> /etc/chrony.conf
 
+# Disable some unneeded services by default (administrators can re-enable if desired)
+systemctl disable abrtd
+
 # Modify yum
 echo "http_caching=packages" >> /etc/yum.conf
-yum history sync
 yum clean all
 
 # Set tuned profile
@@ -464,10 +453,10 @@ if [[ -f /mnt/resource/swapfile ]]; then
 fi
 
 # Unset point release at the end of the post-install script so we can recreate a previous point release without current major version updates
-sed -i -e 's/7.6.1810/$releasever/g' /etc/yum.repos.d/OpenLogicCentOS.repo
-yum-config-manager --enable base updates extras
+#sed -i -e 's/7.8.2003/$releasever/g' /etc/yum.repos.d/*CentOS*.repo
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
+rm -f /etc/resolv.conf 2>/dev/null # workaround old agent bug
 
 %end
