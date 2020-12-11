@@ -1,4 +1,4 @@
-# Kickstart for provisioning a CentOS 7.7 Azure VM
+# Kickstart for provisioning a CentOS 7.9 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,10 +19,10 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url="http://olcentgbl.trafficmanager.net/centos/7.7.1908/os/x86_64/"
-repo --name "os" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.7.1908/os/x86_64/" --cost=100
-repo --name="updates" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.7.1908/updates/x86_64/" --cost=100
-repo --name "extras" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.7.1908/extras/x86_64/" --cost=100
+url --url="http://olcentgbl.trafficmanager.net/centos/7.9.2009/os/x86_64/"
+repo --name "os" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.9.2009/os/x86_64/" --cost=100
+repo --name="updates" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.9.2009/updates/x86_64/" --cost=100
+repo --name "extras" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.9.2009/extras/x86_64/" --cost=100
 repo --name="openlogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/"
 
 # Root password
@@ -110,9 +110,6 @@ util-linux
 # Disable the root account
 usermod root -p '!!'
 
-# Install the cloud-init from 7.8 to address the Azure byte swap issue
-yum -y update cloud-init
-
 # Set OL repos
 curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
@@ -122,7 +119,7 @@ yum-config-manager --setopt=retries=1 --setopt=\*.skip_if_unavailable=1 --save \
 sed -i -e 's/enabled=1/enabled=0/' /etc/yum/pluginconf.d/fastestmirror.conf
 
 # Set these to the point release baseurls so we can recreate a previous point release without current major version updates
-sed -i -e 's/$releasever/7.7.1908/g' /etc/yum.repos.d/OpenLogicCentOS.repo
+sed -i -e 's/$releasever/7.9.2009/g' /etc/yum.repos.d/OpenLogicCentOS.repo
 yum-config-manager --disable base updates extras
 
 # Import CentOS and OpenLogic public keys
@@ -453,7 +450,7 @@ if [[ -f /mnt/resource/swapfile ]]; then
 fi
 
 # Unset point release at the end of the post-install script so we can recreate a previous point release without current major version updates
-sed -i -e 's/7.7.1908/$releasever/g' /etc/yum.repos.d/OpenLogicCentOS.repo
+sed -i -e 's/7.9.2009/$releasever/g' /etc/yum.repos.d/OpenLogicCentOS.repo
 yum-config-manager --enable base updates extras
 
 # Deprovision and prepare for Azure

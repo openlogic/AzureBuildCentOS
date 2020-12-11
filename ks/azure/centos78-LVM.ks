@@ -117,15 +117,23 @@ util-linux
 # Disable the root account
 usermod root -p '!!'
 
-# Set OL repo and import OpenLogic public key
+# Set OL repos
 curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
+
+# Set options for proper repo fallback
+yum-config-manager --setopt=retries=1 --setopt=\*.skip_if_unavailable=1 --save \*
+sed -i -e 's/enabled=1/enabled=0/' /etc/yum/pluginconf.d/fastestmirror.conf
+
+# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
+sed -i -e 's/$releasever/7.8.2003/g' /etc/yum.repos.d/OpenLogicCentOS.repo
+yum-config-manager --disable base updates extras
+
+# Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 
-# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
-#sed -i -e 's/$releasever/7.8.2003/g' /etc/yum.repos.d/*CentOS*.repo
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
 
@@ -449,10 +457,16 @@ if [[ -f /mnt/resource/swapfile ]]; then
 fi
 
 # Unset point release at the end of the post-install script so we can recreate a previous point release without current major version updates
-#sed -i -e 's/7.8.2003/$releasever/g' /etc/yum.repos.d/*CentOS*.repo
+sed -i -e 's/7.8.2003/$releasever/g' /etc/yum.repos.d/OpenLogicCentOS.repo
+yum-config-manager --enable base updates extras
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
 rm -f /etc/resolv.conf 2>/dev/null # workaround old agent bug
+
+# Minimize actual disk usage by zeroing all unused space
+dd if=/dev/zero of=/EMPTY bs=1M || echo "dd exit code $? is suppressed";
+rm -f /EMPTY;
+sync;
 
 %end
