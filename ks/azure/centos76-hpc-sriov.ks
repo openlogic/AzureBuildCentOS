@@ -125,6 +125,10 @@ yum clean all
 curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
 
+# Set options for proper repo fallback
+yum-config-manager --setopt=retries=1 --setopt=\*.skip_if_unavailable=1 --save \*
+sed -i -e 's/enabled=1/enabled=0/' /etc/yum/pluginconf.d/fastestmirror.conf
+
 # Set these to the point release baseurls so we can recreate a previous point release without current major version updates
 sed -i -e 's/$releasever/7.6.1810/g' /etc/yum.repos.d/OpenLogicCentOS.repo
 yum-config-manager --disable base updates extras
@@ -253,7 +257,8 @@ EOF
 
 
 cd /tmp
-CENTOS_HPC_VERSION="centos-hpc-20201105"
+#CENTOS_HPC_VERSION="centos-hpc-20201105"
+CENTOS_HPC_VERSION="centos-hpc-20200814"
 wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
 tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
 cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.x/centos-7.6-hpc
@@ -469,5 +474,10 @@ yum-config-manager --enable base updates extras
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
+
+# Minimize actual disk usage by zeroing all unused space
+dd if=/dev/zero of=/EMPTY bs=1M || echo "dd exit code $? is suppressed";
+rm -f /EMPTY;
+sync;
 
 %end

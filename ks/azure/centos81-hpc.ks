@@ -149,6 +149,11 @@ curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openl
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 
+# Set options for proper repo fallback
+dnf config-manager --setopt=skip_if_unavailable=1 --setopt=timeout=10 --setopt=fastestmirror=0 --save
+dnf config-manager --setopt=\*.skip_if_unavailable=1 --setopt=\*.timeout=10 --setopt=\*.fastestmirror=0 --save \*
+sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's/^#baseurl/baseurl/' /etc/yum.repos.d/CentOS*.repo
+
 # Set these to the point release baseurls so we can recreate a previous point release without current major version updates
 sed -i -e 's/$releasever/8.1.1911/g' /etc/yum.repos.d/OpenLogicCentOS.repo
 yum-config-manager --disable AppStream BaseOS extras
@@ -237,7 +242,8 @@ EOF
 
 
 cd /tmp
-CENTOS_HPC_VERSION="centos-hpc-20201105"
+#CENTOS_HPC_VERSION="centos-hpc-20201105"
+CENTOS_HPC_VERSION="centos-hpc-20200814"
 wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
 tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
 cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-8.x/centos-8.1-hpc
@@ -374,5 +380,10 @@ yum-config-manager --enable AppStream BaseOS extras
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
+
+# Minimize actual disk usage by zeroing all unused space
+dd if=/dev/zero of=/EMPTY bs=1M || echo "dd exit code $? is suppressed";
+rm -f /EMPTY;
+sync;
 
 %end

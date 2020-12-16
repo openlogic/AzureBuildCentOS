@@ -1,4 +1,4 @@
-# Kickstart for provisioning a CentOS 7.8 Azure HPC (SR-IOV) VM
+# Kickstart for provisioning a CentOS 8.3 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,20 +19,31 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url="http://olcentgbl.trafficmanager.net/centos/7.8.2003/os/x86_64/"
-repo --name "os" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.8.2003/os/x86_64/" --cost=100
-repo --name="updates" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.8.2003/updates/x86_64/" --cost=100
-repo --name "extras" --baseurl="http://olcentgbl.trafficmanager.net/centos/7.8.2003/extras/x86_64/" --cost=100
-repo --name="openlogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/7/openlogic/x86_64/"
+url --url="http://olcentgbl.trafficmanager.net/centos/8.3.2011/BaseOS/x86_64/os/"
+repo --name "BaseOS" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.3.2011/BaseOS/x86_64/os/" --cost=100
+repo --name="AppStream" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.3.2011/AppStream/x86_64/os/" --cost=100
+repo --name="OpenLogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/8/openlogic/x86_64/"
 
 # Root password
 rootpw --plaintext "to_be_disabled"
 
 # System services
-services --enabled="sshd,waagent,NetworkManager"
+services --enabled="sshd,waagent,NetworkManager,systemd-resolved"
 
 # System timezone
 timezone Etc/UTC --isUtc
+
+# Firewall configuration
+firewall --disabled
+
+# Enable SELinux
+selinux --enforcing
+
+# Don't configure X
+skipx
+
+# Power down the machine after install
+poweroff
 
 # Partitioning and bootloader configuration
 # Note: biosboot and efi partitions are pre-created %pre to work around blivet issue
@@ -55,82 +66,100 @@ sgdisk --typecode=15:EF00 /dev/sda
 
 %end
 
-# Firewall configuration
-firewall --disabled
-
-# Enable SELinux
-selinux --enforcing
-
-# Don't configure X
-skipx
-
-# Power down the machine after install
-poweroff
 
 # Disable kdump
 %addon com_redhat_kdump --disable
 %end
 
 %packages
-@base
-@console-internet
-chrony
-cifs-utils
-sudo
-python-pyasn1
-parted
 WALinuxAgent
-hypervkvpd
-gdisk
+@^minimal-environment
+@standard
+#@container-tools
+chrony
+sudo
+parted
 cloud-init
 cloud-utils-growpart
-azure-repo-svc
 -dracut-config-rescue
-nfs-utils
-git
+-postfix
+-NetworkManager-config-server
+grub2-pc
+grub2-pc-modules 
+openssh-server
+kernel
+dnf-utils
+rng-tools
+cracklib
+cracklib-dicts
+centos-release
+bind-utils
+python3
+timedatex
 
-# Packages required for ADE (Azure Disk Encryption) ...
-lsscsi
-psmisc
-lvm2
-uuid
-at
-patch
-cryptsetup
-cryptsetup-reencrypt
-pyparted
-procps-ng
-util-linux
-# ... ADE
+# pull firmware packages out
+-aic94xx-firmware
+-alsa-firmware
+-alsa-lib
+-alsa-tools-firmware
+-ivtv-firmware
+-iwl1000-firmware
+-iwl100-firmware
+-iwl105-firmware
+-iwl135-firmware
+-iwl2000-firmware
+-iwl2030-firmware
+-iwl3160-firmware
+-iwl3945-firmware
+-iwl4965-firmware
+-iwl5000-firmware
+-iwl5150-firmware
+-iwl6000-firmware
+-iwl6000g2a-firmware
+-iwl6000g2b-firmware
+-iwl6050-firmware
+-iwl7260-firmware
+-libertas-sd8686-firmware
+-libertas-sd8787-firmware
+-libertas-usb8388-firmware
+
+# Some things from @core we can do without in a minimal install
+-biosdevname
+-plymouth
+-iprutils
+
+gdisk
 
 %end
 
-%post --log=/var/log/anaconda/post-install.log
+
+%post --log=/var/log/anaconda/post-install.log --erroronfail
 
 #!/bin/bash
 
 # Disable the root account
 usermod root -p '!!'
 
-# Set OL repos
-curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
+# Import CentOS public key
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+
+# Set OL repo and import OpenLogic public key
+curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-8.repo
 curl -so /etc/yum.repos.d/OpenLogic.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/OpenLogic.repo
-
-# Set options for proper repo fallback
-yum-config-manager --setopt=retries=1 --setopt=\*.skip_if_unavailable=1 --save \*
-sed -i -e 's/enabled=1/enabled=0/' /etc/yum/pluginconf.d/fastestmirror.conf
-
-# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
-sed -i -e 's/$releasever/7.8.2003/g' /etc/yum.repos.d/OpenLogicCentOS.repo
-yum-config-manager --disable base updates extras
-
-# Import CentOS and OpenLogic public keys
 curl -so /etc/pki/rpm-gpg/OpenLogic-GPG-KEY https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/OpenLogic-GPG-KEY
-rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 
+# Set options for proper repo fallback
+dnf config-manager --setopt=skip_if_unavailable=1 --setopt=timeout=10 --setopt=fastestmirror=0 --save
+dnf config-manager --setopt=\*.skip_if_unavailable=1 --setopt=\*.timeout=10 --setopt=\*.fastestmirror=0 --save \*
+sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's/^#baseurl/baseurl/' /etc/yum.repos.d/CentOS*.repo
+
+# Set these to the point release baseurls so we can recreate a previous point release without current major version updates
+sed -i -e 's/$releasever/8.3.2011/g' /etc/yum.repos.d/OpenLogicCentOS.repo
+yum-config-manager --disable appstream baseos extras
+
 # Set the kernel cmdline
-sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
+sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
 
 # Enforce GRUB_TIMEOUT=1 and remove any existing GRUB_TIMEOUT_STYLE and append GRUB_TIMEOUT_STYLE=countdown after GRUB_TIMEOUT
 sed -i -n -e 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e '/^GRUB_TIMEOUT_STYLE=/!p' -e '/^GRUB_TIMEOUT=/aGRUB_TIMEOUT_STYLE=countdown' /etc/default/grub
@@ -173,9 +202,6 @@ cat << EOF > /etc/modprobe.d/blacklist-nouveau.conf
 blacklist nouveau
 options nouveau modeset=0
 EOF
-cat << EOF > /etc/modprobe.d/blacklist-floppy.conf
-blacklist floppy
-EOF
 
 # Ensure Hyper-V drivers are built into initramfs
 echo '# Ensure Hyper-V drivers are built into initramfs'	>> /etc/dracut.conf.d/azure.conf
@@ -183,8 +209,9 @@ echo -e "\nadd_drivers+=\"hv_vmbus hv_netvsc hv_storvsc\""	>> /etc/dracut.conf.d
 kversion=$( rpm -q kernel | sed 's/kernel\-//' )
 dracut -v -f "/boot/initramfs-${kversion}.img" "$kversion"
 
-# Enable SSH keepalive
+# Enable SSH keepalive / Disable root SSH login
 sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
+sed -i 's/^PermitRootLogin.*/#PermitRootLogin no/g' /etc/ssh/sshd_config
 
 # Configure network
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
@@ -201,40 +228,7 @@ EOF
 
 cat << EOF > /etc/sysconfig/network
 NETWORKING=yes
-HOSTNAME=localhost.localdomain
 EOF
-
-# Deploy new configuration
-cat <<EOF > /etc/pam.d/system-auth-ac
-
-auth        required      pam_env.so
-auth        sufficient    pam_fprintd.so
-auth        sufficient    pam_unix.so nullok try_first_pass
-auth        requisite     pam_succeed_if.so uid >= 1000 quiet_success
-auth        required      pam_deny.so
-
-account     required      pam_unix.so
-account     sufficient    pam_localuser.so
-account     sufficient    pam_succeed_if.so uid < 1000 quiet
-account     required      pam_permit.so
-
-password    requisite     pam_pwquality.so try_first_pass local_users_only retry=3 authtok_type= ucredit=-1 lcredit=-1 dcredit=-1 ocredit=-1
-password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok remember=5
-password    required      pam_deny.so
-
-session     optional      pam_keyinit.so revoke
-session     required      pam_limits.so
--session     optional      pam_systemd.so
-session     [success=1 default=ignore] pam_succeed_if.so service in crond quiet use_uid
-session     required      pam_unix.so
-
-EOF
-
-# Disable persistent net rules
-ln -s /dev/null /etc/udev/rules.d/75-persistent-net-generator.rules
-rm -f /lib/udev/rules.d/75-persistent-net-generator.rules /etc/udev/rules.d/70-persistent-net.rules 2>/dev/null
-rm -f /etc/udev/rules.d/70* 2>/dev/null
-ln -s /dev/null /etc/udev/rules.d/80-net-name-slot.rules
 
 # Disable NetworkManager handling of the SRIOV interfaces
 cat <<EOF > /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules
@@ -246,27 +240,18 @@ SUBSYSTEM=="net", DRIVERS=="hv_pci", ACTION=="add", ENV{NM_UNMANAGED}="1"
 
 EOF
 
-
-cd /tmp
-CENTOS_HPC_VERSION="centos-hpc-20201209"
-wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
-tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
-cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.x/centos-7.8-hpc
-./install.sh
-cd && rm -rf /tmp/azhpc-images-${CENTOS_HPC_VERSION}
-
 # Enable PTP with chrony for accurate time sync
 echo -e "\nrefclock PHC /dev/ptp0 poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
 sed -i 's/makestep.*$/makestep 1.0 -1/g' /etc/chrony.conf
 grep -q '^makestep' /etc/chrony.conf || echo 'makestep 1.0 -1' >> /etc/chrony.conf
 
-# Disable some unneeded services by default (administrators can re-enable if desired)
-systemctl disable abrtd
+# Enable DNS cache
+# Comment this by default due to "DNSSEC validation failed" issues
+#sed -i 's/hosts:\s*files dns myhostname/hosts:      files resolve dns myhostname/' /etc/nsswitch.conf
 
-# Modify yum
-echo "http_caching=packages" >> /etc/yum.conf
-yum history sync
-yum clean all
+# Update dnf configuration
+echo "http_caching=packages" >> /etc/dnf/dnf.conf
+dnf clean all
 
 # Set tuned profile
 echo "virtual-guest" > /etc/tuned/active_profile
@@ -356,88 +341,6 @@ EOFF
 chmod 755 /usr/local/sbin/temp-disk-dataloss-warning
 systemctl enable temp-disk-dataloss-warning
 
-# Create a systemd unit that will handle swapfile
-cat <<EOF > /etc/systemd/system/temp-disk-swapfile.service
-# /etc/systemd/system/temp-disk-swapfile.service
-
-[Unit]
-Description=Swapfile management on mounted Azure temporary resource disk
-After=network-online.target local-fs.target cloud-config.target
-Wants=network-online.target local-fs.target cloud-config.target
-Before=cloud-config.service
-
-ConditionPathIsMountPoint=/mnt/resource
-RequiresMountsFor=/mnt/resource
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/sbin/temp-disk-swapfile start
-ExecStop=/usr/local/sbin/temp-disk-swapfile stop
-RemainAfterExit=yes
-StandardOutput=journal+console
-
-[Install]
-WantedBy=cloud-config.service
-EOF
-
-cat <<'EOF' > /usr/local/sbin/temp-disk-swapfile
-#!/bin/sh
-# Swapfile creation/deletion on mounted Azure temporary resource disk
-# /usr/local/sbin/temp-disk-swapfile
-# See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
-
-AZURE_RESOURCE_DISK_PART1="/dev/disk/cloud/azure_resource-part1"
-
-start() {
-    MOUNTPATH=$(grep "$AZURE_RESOURCE_DISK_PART1" /etc/fstab | tr '\t' ' ' | cut -d' ' -f2)
-    if [ -z "$MOUNTPATH" ]; then
-        echo "There is no mountpoint of $AZURE_RESOURCE_DISK_PART1 in /etc/fstab"
-        exit 1
-    fi
-
-    if [ "$MOUNTPATH" = "none" ]; then
-        echo "Mountpoint of $AZURE_RESOURCE_DISK_PART1 is not a path"
-        exit 1
-    fi
-
-    if ! mountpoint -q "$MOUNTPATH"; then
-        echo "$AZURE_RESOURCE_DISK_PART1 is not mounted at $MOUNTPATH"
-        exit 1
-    fi
-
-    SWAPFILEPATH="${MOUNTPATH}/swapfile"
-
-    if [ ! -f "$SWAPFILEPATH" ]; then
-        (sh -c 'rm -f "$1" && umask 0066 && { fallocate -l "${2}M" "$1" || dd if=/dev/zero "of=$1" bs=1M "count=$2"; } && mkswap "$1" || { r=$?; rm -f "$1"; exit $r; }' 'setup_swap' "$SWAPFILEPATH" '2048') || (echo "Failed to create swapfile at $SWAPFILEPATH"; exit 1)
-        echo "Successfully created swapfile at $SWAPFILEPATH"
-    fi
-    swapon "$SWAPFILEPATH" || (echo "Failed to activate swapfile at $SWAPFILEPATH"; exit 1)
-    echo "Successfully activated swapfile at $SWAPFILEPATH"
-}
-
-stop() {
-    FINDMNTDATA=$(findmnt -S "$AZURE_RESOURCE_DISK_PART1" 2> /dev/null | grep --color=never '/')
-    if [ -z "$FINDMNTDATA" ]; then
-        exit 0
-    fi
-
-    MOUNTPATH=$(echo "$FINDMNTDATA" | cut -d' ' -f1)
-    if [ -z "$MOUNTPATH" ]; then
-        exit 0
-    fi
-
-    (sh -c 'swapoff "$1" && rm -f "$1"' 'swapoff_rm_swap' "${MOUNTPATH}/swapfile") || true
-}
-
-case $1 in
-  start|stop) "$1" ;;
-esac
-
-EOF
-
-chmod 755 /usr/local/sbin/temp-disk-swapfile
-systemctl enable temp-disk-swapfile
-
 # Mount ephemeral disk at /mnt/resource
 cat >> /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
 # By default, the Azure ephemeral temporary resource disk will be mounted
@@ -462,12 +365,11 @@ if [[ -f /mnt/resource/swapfile ]]; then
 fi
 
 # Unset point release at the end of the post-install script so we can recreate a previous point release without current major version updates
-sed -i -e 's/7.8.2003/$releasever/g' /etc/yum.repos.d/OpenLogicCentOS.repo
-yum-config-manager --enable base updates extras
+sed -i -e 's/8.3.2011/$releasever/g' /etc/yum.repos.d/OpenLogicCentOS.repo
+yum-config-manager --enable appstream baseos extras
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
-rm -f /etc/resolv.conf 2>/dev/null # workaround old agent bug
 
 # Minimize actual disk usage by zeroing all unused space
 dd if=/dev/zero of=/EMPTY bs=1M || echo "dd exit code $? is suppressed";
