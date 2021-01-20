@@ -265,6 +265,11 @@ cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.x/centos-7.6-hpc
 ./install.sh
 cd && rm -rf /tmp/azhpc-images-${CENTOS_HPC_VERSION}
 
+# Add Azure HPC image version
+cat << EOF > /opt/azurehpc/azhpc-version
+${CENTOS_HPC_VERSION}
+EOF
+
 # Enable PTP with chrony for accurate time sync
 echo -e "\nrefclock PHC /dev/ptp0 poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
 sed -i 's/makestep.*$/makestep 1.0 -1/g' /etc/chrony.conf
