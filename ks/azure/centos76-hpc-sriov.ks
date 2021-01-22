@@ -58,9 +58,6 @@ sgdisk --typecode=15:EF00 /dev/sda
 # Firewall configuration
 firewall --disabled
 
-# Removing plymouth
--plymouth
-
 # Enable SELinux
 selinux --enforcing
 
@@ -90,6 +87,9 @@ cloud-utils-growpart
 azure-repo-svc
 -dracut-config-rescue
 nfs-utils
+
+# Removing plymouth
+-plymouth
 
 # Packages required for ADE (Azure Disk Encryption) ...
 lsscsi
