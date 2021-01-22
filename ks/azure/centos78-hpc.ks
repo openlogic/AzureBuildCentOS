@@ -61,6 +61,9 @@ firewall --disabled
 # Enable SELinux
 selinux --enforcing
 
+# Removing Plymouth
+-plymouth
+
 # Don't configure X
 skipx
 
@@ -248,7 +251,7 @@ EOF
 
 
 cd /tmp
-CENTOS_HPC_VERSION="centos-hpc-20201209"
+CENTOS_HPC_VERSION="centos-hpc-20210121"
 wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
 tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
 cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.x/centos-7.8-hpc
