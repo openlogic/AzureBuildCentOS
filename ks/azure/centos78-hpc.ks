@@ -61,9 +61,6 @@ firewall --disabled
 # Enable SELinux
 selinux --enforcing
 
-# Removing Plymouth
--plymouth
-
 # Don't configure X
 skipx
 
@@ -91,6 +88,9 @@ azure-repo-svc
 -dracut-config-rescue
 nfs-utils
 git
+
+# Removing Plymouth
+-plymouth
 
 # Packages required for ADE (Azure Disk Encryption) ...
 lsscsi
