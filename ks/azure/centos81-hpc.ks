@@ -67,8 +67,8 @@ sgdisk --typecode=15:EF00 /dev/sda
 %end
 
 
-# Disable kdump
-%addon com_redhat_kdump --disable
+# Enable kdump
+%addon com_redhat_kdump --enable --reserve-mb=auto
 %end
 
 %packages
@@ -140,6 +140,9 @@ gdisk
 # Disable the root account
 usermod root -p '!!'
 
+# Install the sudo from >= 8.3 to address CVE-2021-3156
+yum -y update sudo 
+
 # Import CentOS public key
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
@@ -159,7 +162,7 @@ sed -i -e 's/$releasever/8.1.1911/g' /etc/yum.repos.d/OpenLogicCentOS.repo
 yum-config-manager --disable AppStream BaseOS extras
 
 # Set the kernel cmdline
-sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
+sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 scsi_mod.use_blk_mq=y crashkernel=auto"/g' /etc/default/grub
 
 # Enforce GRUB_TIMEOUT=1 and remove any existing GRUB_TIMEOUT_STYLE and append GRUB_TIMEOUT_STYLE=countdown after GRUB_TIMEOUT
 sed -i -n -e 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e '/^GRUB_TIMEOUT_STYLE=/!p' -e '/^GRUB_TIMEOUT=/aGRUB_TIMEOUT_STYLE=countdown' /etc/default/grub
@@ -205,7 +208,9 @@ EOF
 
 # Ensure Hyper-V drivers are built into initramfs
 echo '# Ensure Hyper-V drivers are built into initramfs'	>> /etc/dracut.conf.d/azure.conf
-echo -e "\nadd_drivers+=\"hv_vmbus hv_netvsc hv_storvsc\""	>> /etc/dracut.conf.d/azure.conf
+echo -e "\nadd_drivers+=\" hv_vmbus hv_netvsc hv_storvsc\""	>> /etc/dracut.conf.d/azure.conf
+echo '# Support booting Azure VMs off NVMe storage'		>> /etc/dracut.conf.d/azure.conf
+echo -e "\nadd_drivers+=\" nvme pci-hyperv\""			>> /etc/dracut.conf.d/azure.conf
 kversion=$( rpm -q kernel | sed 's/kernel\-//' )
 dracut -v -f "/boot/initramfs-${kversion}.img" "$kversion"
 
@@ -240,6 +245,15 @@ SUBSYSTEM=="net", DRIVERS=="hv_pci", ACTION=="add", ENV{NM_UNMANAGED}="1"
 
 EOF
 
+# Change name of /dev/ptp to ensure uniqueness
+cat <<EOF > /etc/udev/rules.d/99-azure-hyperv-ptp.rules
+
+# Mellanox VFs also produce a /dev/ptp device. To avoid the conflict,
+# we will rename the hyperv ptp interface "ptp_hyperv"
+SUBSYSTEM=="ptp", ATTR{clock_name}=="hyperv", SYMLINK += "ptp_hyperv"
+
+EOF
+
 
 cd /tmp
 #CENTOS_HPC_VERSION="centos-hpc-20201105"
@@ -256,7 +270,7 @@ ${CENTOS_HPC_VERSION}
 EOF
 
 # Enable PTP with chrony for accurate time sync
-echo -e "\nrefclock PHC /dev/ptp0 poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
+echo -e "\nrefclock PHC /dev/ptp_hyperv poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
 sed -i 's/makestep.*$/makestep 1.0 -1/g' /etc/chrony.conf
 grep -q '^makestep' /etc/chrony.conf || echo 'makestep 1.0 -1' >> /etc/chrony.conf
 
@@ -355,6 +369,88 @@ EOF
 EOFF
 chmod 755 /usr/local/sbin/temp-disk-dataloss-warning
 systemctl enable temp-disk-dataloss-warning
+
+# Create a systemd unit that will handle swapfile
+cat <<EOF > /etc/systemd/system/temp-disk-swapfile.service
+# /etc/systemd/system/temp-disk-swapfile.service
+
+[Unit]
+Description=Swapfile management on mounted Azure temporary resource disk
+After=network-online.target local-fs.target cloud-config.target
+Wants=network-online.target local-fs.target cloud-config.target
+Before=cloud-config.service
+
+ConditionPathIsMountPoint=/mnt/resource
+RequiresMountsFor=/mnt/resource
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/temp-disk-swapfile start
+ExecStop=/usr/local/sbin/temp-disk-swapfile stop
+RemainAfterExit=yes
+StandardOutput=journal+console
+
+[Install]
+WantedBy=cloud-config.service
+EOF
+
+cat <<'EOF' > /usr/local/sbin/temp-disk-swapfile
+#!/bin/sh
+# Swapfile creation/deletion on mounted Azure temporary resource disk
+# /usr/local/sbin/temp-disk-swapfile
+# See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview#temporary-disk
+
+AZURE_RESOURCE_DISK_PART1="/dev/disk/cloud/azure_resource-part1"
+
+start() {
+    MOUNTPATH=$(grep "$AZURE_RESOURCE_DISK_PART1" /etc/fstab | tr '\t' ' ' | cut -d' ' -f2)
+    if [ -z "$MOUNTPATH" ]; then
+        echo "There is no mountpoint of $AZURE_RESOURCE_DISK_PART1 in /etc/fstab"
+        exit 1
+    fi
+
+    if [ "$MOUNTPATH" = "none" ]; then
+        echo "Mountpoint of $AZURE_RESOURCE_DISK_PART1 is not a path"
+        exit 1
+    fi
+
+    if ! mountpoint -q "$MOUNTPATH"; then
+        echo "$AZURE_RESOURCE_DISK_PART1 is not mounted at $MOUNTPATH"
+        exit 1
+    fi
+
+    SWAPFILEPATH="${MOUNTPATH}/swapfile"
+
+    if [ ! -f "$SWAPFILEPATH" ]; then
+        (sh -c 'rm -f "$1" && umask 0066 && { fallocate -l "${2}M" "$1" || dd if=/dev/zero "of=$1" bs=1M "count=$2"; } && mkswap "$1" || { r=$?; rm -f "$1"; exit $r; }' 'setup_swap' "$SWAPFILEPATH" '2048') || (echo "Failed to create swapfile at $SWAPFILEPATH"; exit 1)
+        echo "Successfully created swapfile at $SWAPFILEPATH"
+    fi
+    swapon "$SWAPFILEPATH" || (echo "Failed to activate swapfile at $SWAPFILEPATH"; exit 1)
+    echo "Successfully activated swapfile at $SWAPFILEPATH"
+}
+
+stop() {
+    FINDMNTDATA=$(findmnt -S "$AZURE_RESOURCE_DISK_PART1" 2> /dev/null | grep --color=never '/')
+    if [ -z "$FINDMNTDATA" ]; then
+        exit 0
+    fi
+
+    MOUNTPATH=$(echo "$FINDMNTDATA" | cut -d' ' -f1)
+    if [ -z "$MOUNTPATH" ]; then
+        exit 0
+    fi
+
+    (sh -c 'swapoff "$1" && rm -f "$1"' 'swapoff_rm_swap' "${MOUNTPATH}/swapfile") || true
+}
+
+case $1 in
+  start|stop) "$1" ;;
+esac
+
+EOF
+
+chmod 755 /usr/local/sbin/temp-disk-swapfile
+systemctl disable temp-disk-swapfile
 
 # Mount ephemeral disk at /mnt/resource
 cat >> /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF

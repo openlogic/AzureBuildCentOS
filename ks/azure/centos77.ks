@@ -67,8 +67,8 @@ skipx
 # Power down the machine after install
 poweroff
 
-# Disable kdump
-%addon com_redhat_kdump --disable
+# Enable kdump
+%addon com_redhat_kdump --enable --reserve-mb=auto
 %end
 
 %packages
@@ -110,8 +110,11 @@ util-linux
 # Disable the root account
 usermod root -p '!!'
 
-# Install the cloud-init from 7.8 to address the Azure byte swap issue
+# Install the cloud-init from >= 7.8 to address the Azure byte swap issue
 yum -y update cloud-init
+
+# Install the sudo from >= 7.9 to address CVE-2021-3156
+yum -y update sudo
 
 # Set OL repos
 curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
@@ -131,7 +134,7 @@ rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 rpm --import /etc/pki/rpm-gpg/OpenLogic-GPG-KEY
 
 # Set the kernel cmdline
-sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0 scsi_mod.use_blk_mq=y"/g' /etc/default/grub
+sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0 scsi_mod.use_blk_mq=y crashkernel=auto"/g' /etc/default/grub
 
 # Enforce GRUB_TIMEOUT=1 and remove any existing GRUB_TIMEOUT_STYLE and append GRUB_TIMEOUT_STYLE=countdown after GRUB_TIMEOUT
 sed -i -n -e 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e '/^GRUB_TIMEOUT_STYLE=/!p' -e '/^GRUB_TIMEOUT=/aGRUB_TIMEOUT_STYLE=countdown' /etc/default/grub
@@ -180,7 +183,9 @@ EOF
 
 # Ensure Hyper-V drivers are built into initramfs
 echo '# Ensure Hyper-V drivers are built into initramfs'	>> /etc/dracut.conf.d/azure.conf
-echo -e "\nadd_drivers+=\"hv_vmbus hv_netvsc hv_storvsc\""	>> /etc/dracut.conf.d/azure.conf
+echo -e "\nadd_drivers+=\" hv_vmbus hv_netvsc hv_storvsc\""	>> /etc/dracut.conf.d/azure.conf
+echo '# Support booting Azure VMs off NVMe storage'		>> /etc/dracut.conf.d/azure.conf
+echo -e "\nadd_drivers+=\" nvme pci-hyperv\""			>> /etc/dracut.conf.d/azure.conf
 kversion=$( rpm -q kernel | sed 's/kernel\-//' )
 dracut -v -f "/boot/initramfs-${kversion}.img" "$kversion"
 
@@ -247,13 +252,22 @@ SUBSYSTEM=="net", DRIVERS=="hv_pci", ACTION=="add", ENV{NM_UNMANAGED}="1"
 
 EOF
 
+# Change name of /dev/ptp to ensure uniqueness
+cat <<EOF > /etc/udev/rules.d/99-azure-hyperv-ptp.rules
+
+# Mellanox VFs also produce a /dev/ptp device. To avoid the conflict,
+# we will rename the hyperv ptp interface "ptp_hyperv"
+SUBSYSTEM=="ptp", ATTR{clock_name}=="hyperv", SYMLINK += "ptp_hyperv"
+
+EOF
+
 # Enable PTP with chrony for accurate time sync
-echo -e "\nrefclock PHC /dev/ptp0 poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
+echo -e "\nrefclock PHC /dev/ptp_hyperv poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
 sed -i 's/makestep.*$/makestep 1.0 -1/g' /etc/chrony.conf
 grep -q '^makestep' /etc/chrony.conf || echo 'makestep 1.0 -1' >> /etc/chrony.conf
 
 # Disable some unneeded services by default (administrators can re-enable if desired)
-systemctl disable abrtd
+systemctl disable abrtd abrt-ccpp abrt-oops abrt-vmcore abrt-xorg
 
 # Modify yum
 echo "http_caching=packages" >> /etc/yum.conf
@@ -427,7 +441,7 @@ esac
 EOF
 
 chmod 755 /usr/local/sbin/temp-disk-swapfile
-systemctl enable temp-disk-swapfile
+systemctl disable temp-disk-swapfile
 
 # Mount ephemeral disk at /mnt/resource
 cat >> /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg <<EOF
