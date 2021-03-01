@@ -114,21 +114,27 @@ util-linux
 # Disable the root account
 usermod root -p '!!'
 
-# Install the cloud-init from 7.8 to address the Azure byte swap issue
-yum -y update cloud-init
-
 # Install the sudo from >= 7.9 to address CVE-2021-3156
 yum -y update sudo
 
+# Disable 7 base/updates/extras repos and add 7.8.2003 updates repo to version lock cloud-init to 18.5 and kernel to 3.10.0-1127.19.1
+yum-config-manager --disable base updates extras
+yum-config-manager --add-repo=http://olcentgbl.trafficmanager.net/centos/7.8.2003/updates/x86_64/ --add-repo=http://olcentgbl.trafficmanager.net/centos/7.8.2003/os/x86_64/
+yum clean all
+
+# Install the cloud-init from 7.8 to address the Azure byte swap issue
+yum -y update cloud-init
+
 # Install kernel 3.10.0-1127 (and interdependent pkgs) in order to provide fix:
 # rhashtable: Still do rehash when we get EEXIST ( https://github.com/torvalds/linux/commit/408f13ef358aa5ad56dc6230c2c7deb92cf462b1 )
-yum-config-manager --add-repo=http://olcentgbl.trafficmanager.net/centos/7.8.2003/updates/x86_64/
-yum clean all
 yum -y install kernel-3.10.0-1127.19.1.el7 kernel-devel-3.10.0-1127.19.1.el7 kernel-tools-libs-3.10.0-1127.19.1.el7 kernel-tools-3.10.0-1127.19.1.el7 bpftool-3.10.0-1127.19.1.el7 python-perf-3.10.0-1127.19.1.el7
-rm -f /etc/yum.repos.d/olcentgbl.trafficmanager.net_centos_7.8.2003_updates*.repo
 # Remove older kernel installed by anaconda during install
 package-cleanup -y --oldkernels --count=1
 yum clean all
+
+# Re-enable 7 base/updates/extras repos and remove 7.8.2003 updates repo now that we're done with it
+yum-config-manager --enable base updates extras
+rm -f /etc/yum.repos.d/olcentgbl.trafficmanager.net_centos_7.8.2003_*.repo
 
 # Set OL repos
 curl -so /etc/yum.repos.d/OpenLogicCentOS.repo https://raw.githubusercontent.com/openlogic/AzureBuildCentOS/master/config/azure/CentOS-Base-7.repo
