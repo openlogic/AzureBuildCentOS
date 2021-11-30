@@ -182,6 +182,17 @@ EOF
 cat << EOF > /etc/modprobe.d/blacklist-floppy.conf
 blacklist floppy
 EOF
+# Blacklist the radeon and amdgpu modules due to them triggering a bug check on the Azure host if used on NVv4 instances
+cat << EOF > /etc/modprobe.d/blacklist-radeon.conf
+blacklist radeon
+install radeon /bin/false
+EOF
+cat << EOF > /etc/modprobe.d/blacklist-amdgpu.conf
+blacklist amdgpu
+install amdgpu /bin/false
+EOF
+echo '# Ensure radeon and amdgpu modules are NOT built into initramfs'	>> /etc/dracut.conf.d/azure.conf
+echo -e "\nomit_drivers+=\"radeon amdgpu\""	>> /etc/dracut.conf.d/azure.conf
 
 # Ensure Hyper-V drivers are built into initramfs
 echo '# Ensure Hyper-V drivers are built into initramfs'	>> /etc/dracut.conf.d/azure.conf
