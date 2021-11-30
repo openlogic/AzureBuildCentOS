@@ -1,4 +1,4 @@
-# Kickstart for provisioning a CentOS 8.1 Azure HPC VM
+# Kickstart for provisioning a CentOS 8.4 Azure VM
 
 # System authorization information
 auth --enableshadow --passalgo=sha512
@@ -19,9 +19,9 @@ lang en_US.UTF-8
 network --bootproto=dhcp
 
 # Use network installation
-url --url="http://olcentgbl.trafficmanager.net/centos/8.1.1911/BaseOS/x86_64/os/"
-repo --name "BaseOS" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.1.1911/BaseOS/x86_64/os/" --cost=100
-repo --name="AppStream" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.1.1911/AppStream/x86_64/os/" --cost=100
+url --url="http://olcentgbl.trafficmanager.net/centos/8.4.2105/BaseOS/x86_64/os/"
+repo --name "BaseOS" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.4.2105/BaseOS/x86_64/os/" --cost=100
+repo --name="AppStream" --baseurl="http://olcentgbl.trafficmanager.net/centos/8.4.2105/AppStream/x86_64/os/" --cost=100
 repo --name="OpenLogic" --baseurl="http://olcentgbl.trafficmanager.net/openlogic/8/openlogic/x86_64/"
 
 # Root password
@@ -96,6 +96,8 @@ centos-release
 bind-utils
 python3
 timedatex
+dhcp-client	# Explicit for CentOS 8.4
+efivar 		# Explicit for CentOS 8.4
 
 # pull firmware packages out
 -aic94xx-firmware
@@ -140,12 +142,6 @@ gdisk
 # Disable the root account
 usermod root -p '!!'
 
-# Install sudo from >= 8.3 to address CVE-2021-3156
-yum -y update sudo 
-
-# Install libgcrypt to >= 1.8.5-4.el8 to address qemu-kvm install issue
-yum -y update libgcrypt
-
 # Import CentOS public key
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
@@ -161,8 +157,8 @@ dnf config-manager --setopt=\*.skip_if_unavailable=1 --setopt=\*.timeout=10 --se
 sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's/^#baseurl/baseurl/' /etc/yum.repos.d/CentOS*.repo
 
 # Set these to the point release baseurls so we can recreate a previous point release without current major version updates
-sed -i -e 's/$releasever/8.1.1911/g' /etc/yum.repos.d/OpenLogicCentOS.repo
-yum-config-manager --disable AppStream BaseOS extras
+sed -i -e 's/$releasever/8.4.2105/g' /etc/yum.repos.d/OpenLogicCentOS.repo
+yum-config-manager --disable appstream baseos extras
 
 # Set the kernel cmdline
 sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 scsi_mod.use_blk_mq=y crashkernel=auto"/g' /etc/default/grub
@@ -268,21 +264,6 @@ SUBSYSTEM=="ptp", ATTR{clock_name}=="hyperv", SYMLINK += "ptp_hyperv"
 
 EOF
 
-
-cd /tmp
-#CENTOS_HPC_VERSION="centos-hpc-20201105"
-CENTOS_HPC_VERSION="centos-hpc-20210416"
-wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
-tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
-cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-8.x/centos-8.1-hpc
-./install.sh
-cd && rm -rf /tmp/azhpc-images-${CENTOS_HPC_VERSION}
-
-# Add Azure HPC image version
-cat << EOF > /opt/azurehpc/azhpc-version
-${CENTOS_HPC_VERSION}
-EOF
-
 # Enable PTP with chrony for accurate time sync
 echo -e "\nrefclock PHC /dev/ptp_hyperv poll 3 dpoll -2 offset 0\n" >> /etc/chrony.conf
 sed -i 's/makestep.*$/makestep 1.0 -1/g' /etc/chrony.conf
@@ -297,7 +278,7 @@ echo "http_caching=packages" >> /etc/dnf/dnf.conf
 dnf clean all
 
 # Set tuned profile
-echo "hpc-compute" > /etc/tuned/active_profile
+echo "virtual-guest" > /etc/tuned/active_profile
 
 # Disable provisioning and ephemeral disk handling in waagent.conf
 sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
@@ -493,8 +474,8 @@ if [[ -f /mnt/resource/swapfile ]]; then
 fi
 
 # Unset point release at the end of the post-install script so we can recreate a previous point release without current major version updates
-sed -i -e 's/8.1.1911/$releasever/g' /etc/yum.repos.d/OpenLogicCentOS.repo
-yum-config-manager --enable AppStream BaseOS extras
+sed -i -e 's/8.4.2105/$releasever/g' /etc/yum.repos.d/OpenLogicCentOS.repo
+yum-config-manager --enable appstream baseos extras
 
 # Deprovision and prepare for Azure
 /usr/sbin/waagent -force -deprovision
