@@ -297,7 +297,7 @@ echo "http_caching=packages" >> /etc/dnf/dnf.conf
 dnf clean all
 
 # Set tuned profile
-echo "hpc-compute" > /etc/tuned/active_profile
+echo "virtual-guest" > /etc/tuned/active_profile
 
 # Disable provisioning and ephemeral disk handling in waagent.conf
 sed -i 's/Provisioning.Enabled=y/Provisioning.Enabled=n/g' /etc/waagent.conf
