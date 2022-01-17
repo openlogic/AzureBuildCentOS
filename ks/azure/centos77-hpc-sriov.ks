@@ -294,10 +294,12 @@ EOF
 
 
 cd /tmp
-CENTOS_HPC_VERSION="centos-hpc-20211206"
+CENTOS_HPC_VERSION="centos-hpc-20220112"
 wget https://github.com/Azure/azhpc-images/archive/${CENTOS_HPC_VERSION}.tar.gz
 tar -xvf ${CENTOS_HPC_VERSION}.tar.gz
 cd azhpc-images-${CENTOS_HPC_VERSION}/centos/centos-7.x/centos-7.7-hpc
+# Skip restarting MOFED for image creation
+sed -i '25 s/^/#/' ./install_mellanoxofed.sh
 ./install.sh
 cd && rm -rf /tmp/azhpc-images-${CENTOS_HPC_VERSION}
 
